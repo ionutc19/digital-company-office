@@ -8,12 +8,14 @@ import { RoomType } from '../types/Rooms'
 // import socialRoutes from "@colyseus/social/express"
 
 import { SkyOffice } from './rooms/SkyOffice'
+import digitalCompanyRouter from './digital-company/router'
 
 const port = Number(process.env.PORT || 2567)
 const app = express()
 
 app.use(cors())
 app.use(express.json())
+app.use('/api/digital-company', digitalCompanyRouter)
 // app.use(express.static('dist'))
 
 const server = http.createServer(app)
@@ -24,8 +26,8 @@ const gameServer = new Server({
 // register room handlers
 gameServer.define(RoomType.LOBBY, LobbyRoom)
 gameServer.define(RoomType.PUBLIC, SkyOffice, {
-  name: 'Public Lobby',
-  description: 'For making friends and familiarizing yourself with the controls',
+  name: 'Digital Company HQ',
+  description: 'AI operations, governance and engineering control center',
   password: null,
   autoDispose: false,
 })
@@ -44,3 +46,4 @@ app.use('/colyseus', monitor())
 
 gameServer.listen(port)
 console.log(`Listening on ws://localhost:${port}`)
+

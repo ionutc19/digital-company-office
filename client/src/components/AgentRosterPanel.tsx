@@ -2,7 +2,9 @@ import React, { useState } from 'react'
 import styled from 'styled-components'
 
 import { digitalCompanyAgents } from '../digital-company/agents'
+import { useHermesAgents } from '../digital-company/useHermesAgents'
 import {
+  AgentStatus,
   agentStatusColor,
   agentStatusLabel,
 } from '../digital-company/agentStatus'
@@ -132,13 +134,32 @@ const Footer = styled.div`
 
 export default function AgentRosterPanel() {
   const [collapsed, setCollapsed] = useState(false)
+  const { agents: hermesAgents, connected } = useHermesAgents()
+
+  const agents = digitalCompanyAgents.map((agent) => {
+    const live = hermesAgents.find(
+      (item) => item.profile === agent.hermesProfile
+    )
+
+    return {
+      ...agent,
+      status: connected
+        ? live?.status || agent.status
+        : AgentStatus.OFFLINE,
+      task: live?.task || null,
+    }
+  })
 
   return (
     <Panel>
       <Header>
         <div>
           <h2>Digital Company HQ</h2>
-          <p>11 registered agents · static status preview</p>
+          <p>
+            {connected
+              ? 'Hermes Kanban connected · live status'
+              : 'Hermes Kanban unavailable'}
+          </p>
         </div>
 
         <Toggle
@@ -152,7 +173,7 @@ export default function AgentRosterPanel() {
       {!collapsed && (
         <>
           <AgentList>
-            {digitalCompanyAgents.map((agent) => (
+            {agents.map((agent) => (
               <AgentCard
                 type="button"
                 key={agent.id}
@@ -200,3 +221,4 @@ export default function AgentRosterPanel() {
     </Panel>
   )
 }
+
