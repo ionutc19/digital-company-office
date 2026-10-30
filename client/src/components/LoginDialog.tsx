@@ -141,7 +141,7 @@ for (let i = avatars.length - 1; i > 0; i--) {
 }
 
 export default function LoginDialog() {
-  const [name, setName] = useState<string>('')
+  const [name, setName] = useState<string>('Ionut')
   const [avatarIndex, setAvatarIndex] = useState<number>(0)
   const [nameFieldEmpty, setNameFieldEmpty] = useState<boolean>(false)
   const dispatch = useAppDispatch()
@@ -167,7 +167,7 @@ export default function LoginDialog() {
 
   return (
     <Wrapper onSubmit={handleSubmit}>
-      <Title>Joining</Title>
+      <Title>Enter Digital Company</Title>
       <RoomName>
         <Avatar style={{ background: getColorByString(roomName) }}>
           {getAvatarString(roomName)}
@@ -200,11 +200,11 @@ export default function LoginDialog() {
           <TextField
             autoFocus
             fullWidth
-            label="Name"
+            label="Human Owner"
             variant="outlined"
             color="secondary"
             error={nameFieldEmpty}
-            helperText={nameFieldEmpty && 'Name is required'}
+            helperText={nameFieldEmpty && 'Human Owner name is required'}
             onInput={(e) => {
               setName((e.target as HTMLInputElement).value)
             }}
@@ -236,9 +236,10 @@ export default function LoginDialog() {
       </Content>
       <Bottom>
         <Button variant="contained" color="secondary" size="large" type="submit">
-          Join
+          Enter Office
         </Button>
       </Bottom>
     </Wrapper>
   )
 }
+
