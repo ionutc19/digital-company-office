@@ -160,12 +160,12 @@ export default function LoginDialog() {
       <Title>Enter Digital Company</Title>
       <RoomName>
         <Avatar style={{ background: getColorByString(roomName) }}>
-          {getAvatarString(roomName)}
+          DC
         </Avatar>
-        <h3>{roomName}</h3>
+        <h3>Digital Company HQ</h3>
       </RoomName>
       <RoomDescription>
-        <ArrowRightIcon /> {roomDescription}
+        <ArrowRightIcon /> AI operations, governance and engineering control center
       </RoomDescription>
       <Content>
         <Left>
@@ -209,6 +209,7 @@ export default function LoginDialog() {
     </Wrapper>
   )
 }
+
 
 
 

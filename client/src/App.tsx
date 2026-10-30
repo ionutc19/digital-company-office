@@ -10,6 +10,7 @@ import WhiteboardDialog from './components/WhiteboardDialog'
 import Chat from './components/Chat'
 import HelperButtonGroup from './components/HelperButtonGroup'
 import MobileVirtualJoystick from './components/MobileVirtualJoystick'
+import AgentRosterPanel from './components/AgentRosterPanel'
 
 const Backdrop = styled.div`
   position: absolute;
@@ -36,6 +37,7 @@ function App() {
         <>
           <Chat />
           <MobileVirtualJoystick />
+          <AgentRosterPanel />
         </>
       )
     }
@@ -57,5 +59,6 @@ function App() {
 }
 
 export default App
+
 
 
