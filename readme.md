@@ -1,3 +1,40 @@
+# Digital Company Virtual Office
+
+Fork of SkyOffice customised as the operational cockpit of the Digital Company
+Hermes fleet. Branches: `master` = vanilla SkyOffice (tag
+`skyoffice-vanilla-baseline`), `digital-company` = working branch.
+
+**Runtime:** Node.js 22 LTS (`.nvmrc`, `engines`; the Hermes Windows installer
+already puts Node 22 first on PATH) and Yarn 1.22.22 (`packageManager`).
+Registry and network timeout are set per project in `.yarnrc`.
+
+```powershell
+corepack enable          # once per machine; provides yarn 1.22.22
+yarn install --frozen-lockfile
+cd types;  yarn install --frozen-lockfile; cd ..
+cd client; yarn install --frozen-lockfile; cd ..
+yarn test                # adapter status-mapping tests
+yarn start               # backend + read-only Hermes adapter on 127.0.0.1:2567
+cd client; yarn dev      # UI on http://127.0.0.1:5173 (proxies /api to :2567)
+```
+
+Live status: Hermes Kanban -> `hermes kanban list --json` -> adapter
+(`server/digital-company/`) -> `/api/digital-company/agents` -> roster UI.
+No LLM calls. The adapter binds to loopback, caches for 3 s, validates the CLI
+JSON and returns 503 (UI shows OFFLINE) when Hermes is unavailable.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `HERMES_EXE` | `%LOCALAPPDATA%\hermes\hermes-agent\venv\Scripts\hermes.exe`, then `bin\hermes.exe`, then PATH | Hermes CLI used by the adapter (must be an `.exe`, not `.cmd`) |
+| `HOST` / `PORT` | `127.0.0.1` / `2567` | Backend bind address |
+| `DC_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | CORS allowlist |
+| `ENABLE_COLYSEUS_MONITOR` | unset | `1` enables the unauthenticated `/colyseus` monitor (debug only) |
+
+Operations (start/stop/status/autostart) live in the `digital-company` repo
+under `ops/`; see its `docs/FRESH-LAPTOP-RECOVERY.md`.
+
+---
+
 # SkyOffice ![License](https://img.shields.io/badge/license-MIT-blue) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)
 
 <img alt="Logo" align="right" src="https://user-images.githubusercontent.com/11501902/139942585-a6b044ce-3695-460a-91bd-dd9f1d4611c8.png" width="20%" />
