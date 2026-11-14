@@ -10,6 +10,7 @@ import {
 } from '../digital-company/agentStatus'
 import { getHermesKanbanUrl } from '../digital-company/hermesLinks'
 import { selectAgent } from '../digital-company/agentSelection'
+import { toggleControlCenter } from '../digital-company/controlCenter'
 
 const Panel = styled.aside`
   position: fixed;
@@ -160,12 +161,14 @@ export default function AgentRosterPanel() {
           </p>
         </div>
 
-        <Toggle
-          type="button"
-          onClick={() => setCollapsed((current) => !current)}
-        >
-          {collapsed ? 'Open' : 'Hide'}
-        </Toggle>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <Toggle type="button" onClick={toggleControlCenter} title="John's Control Center">
+            Control
+          </Toggle>
+          <Toggle type="button" onClick={() => setCollapsed((current) => !current)}>
+            {collapsed ? 'Open' : 'Hide'}
+          </Toggle>
+        </div>
       </Header>
 
       {!collapsed && (

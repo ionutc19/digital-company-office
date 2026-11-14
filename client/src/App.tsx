@@ -12,6 +12,7 @@ import HelperButtonGroup from './components/HelperButtonGroup'
 import MobileVirtualJoystick from './components/MobileVirtualJoystick'
 import AgentRosterPanel from './components/AgentRosterPanel'
 import AgentDetailPanel from './components/AgentDetailPanel'
+import ControlCenterPanel from './components/ControlCenterPanel'
 
 const Backdrop = styled.div`
   position: absolute;
@@ -40,6 +41,7 @@ function App() {
           <MobileVirtualJoystick />
           <AgentRosterPanel />
           <AgentDetailPanel />
+          <ControlCenterPanel />
         </>
       )
     }

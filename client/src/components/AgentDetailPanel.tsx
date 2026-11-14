@@ -6,6 +6,7 @@ import { digitalCompanyAgents } from '../digital-company/agents'
 import { AgentStatus, agentStatusColor, agentStatusLabel } from '../digital-company/agentStatus'
 import { selectAgent, subscribeAgentSelection, timeAgo } from '../digital-company/agentSelection'
 import { getHermesKanbanUrl, getHermesProfileUrl } from '../digital-company/hermesLinks'
+import { setControlCenterOpen } from '../digital-company/controlCenter'
 import { HermesAgentState } from '../digital-company/useHermesAgents'
 
 interface RecentTask {
@@ -284,9 +285,15 @@ export default function AgentDetailPanel() {
         <button type="button" onClick={() => open(getHermesProfileUrl(def.hermesProfile))}>
           Chat in Hermes
         </button>
-        <button type="button" className="secondary" onClick={() => open(getHermesKanbanUrl())}>
-          Kanban
-        </button>
+        {def.hermesProfile === 'john-tdm' ? (
+          <button type="button" className="secondary" onClick={() => setControlCenterOpen(true)}>
+            Control Center
+          </button>
+        ) : (
+          <button type="button" className="secondary" onClick={() => open(getHermesKanbanUrl())}>
+            Kanban
+          </button>
+        )}
       </Actions>
     </Panel>
   )
