@@ -8,6 +8,7 @@ import {
   ApprovalCategory,
   approvalFromShow,
   buildAgentStates,
+  buildOverview,
   HermesTask,
   parseKanbanTasks,
   recentTasksForProfile,
@@ -182,6 +183,20 @@ router.get('/agents', async (_req, res) => {
     source: 'hermes-kanban',
     generatedAt: new Date(entry.at).toISOString(),
     agents: buildAgentStates(entry.tasks, entry.approvals),
+  })
+})
+
+router.get('/overview', async (_req, res) => {
+  const entry = await loadKanban()
+  res.set('Cache-Control', 'no-store')
+  if (!entry.tasks) {
+    res.status(503).json({ source: 'hermes-kanban', error: entry.error })
+    return
+  }
+  res.json({
+    source: 'hermes-kanban',
+    generatedAt: new Date(entry.at).toISOString(),
+    ...buildOverview(entry.tasks, entry.approvals),
   })
 })
 

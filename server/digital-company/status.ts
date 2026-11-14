@@ -236,3 +236,87 @@ export function recentTasksForProfile(tasks: HermesTask[], profile: string, limi
       lastActivityAt: lastActivity(t) || null,
     }))
 }
+
+const agentByProfile = new Map(AGENTS.map((a) => [a.profile, a]))
+const FRIENDLY_PROJECT = /^DC-\d{4}$/
+
+export interface OverviewItem {
+  taskId: string
+  title: string
+  status: string
+  agentId: string | null
+  agentName: string | null
+  projectId: string | null
+  since: number | null
+  approval?: ApprovalCategory
+  lastFailure?: string | null
+}
+
+export interface ProjectSummary {
+  projectId: string
+  friendly: boolean
+  total: number
+  open: number
+  byStatus: Record<string, number>
+  agents: string[]
+  pendingApprovals: number
+  lastActivityAt: number | null
+}
+
+const toItem = (t: HermesTask, approvals: Map<string, ApprovalCategory>): OverviewItem => {
+  const agent = t.assignee ? agentByProfile.get(t.assignee) : undefined
+  const approval = approvals.get(t.id)
+  return {
+    taskId: t.id,
+    title: t.title,
+    status: t.status,
+    agentId: agent?.id ?? null,
+    agentName: agent?.name ?? t.assignee ?? null,
+    projectId: t.project_id,
+    since: t.started_at || t.created_at || null,
+    ...(approval ? { approval } : {}),
+    ...(t.last_failure_error ? { lastFailure: t.last_failure_error } : {}),
+  }
+}
+
+const bySinceAsc = (a: OverviewItem, b: OverviewItem) => (a.since || 0) - (b.since || 0)
+
+/**
+ * John's Control Center: what needs Ionut, what is stuck, what is moving,
+ * Goku's review queue and a per-project summary. Pure and LLM-free.
+ */
+export function buildOverview(tasks: HermesTask[], approvals: Map<string, ApprovalCategory> = new Map()) {
+  const live = tasks.filter((t) => t.status !== 'archived')
+  const items = live.map((t) => toItem(t, approvals))
+  const pick = (pred: (i: OverviewItem) => boolean) => items.filter(pred).sort(bySinceAsc)
+
+  const projects = new Map<string, ProjectSummary>()
+  for (const t of live) {
+    const key = t.project_id || 'Unassigned'
+    let p = projects.get(key)
+    if (!p) {
+      p = { projectId: key, friendly: FRIENDLY_PROJECT.test(key), total: 0, open: 0, byStatus: {}, agents: [], pendingApprovals: 0, lastActivityAt: null }
+      projects.set(key, p)
+    }
+    p.total++
+    if (!['done', 'archived'].includes(t.status)) p.open++
+    p.byStatus[t.status] = (p.byStatus[t.status] || 0) + 1
+    const name = (t.assignee && agentByProfile.get(t.assignee)?.name) || t.assignee
+    if (name && !p.agents.includes(name)) p.agents.push(name)
+    if (t.status === 'blocked' && approvals.has(t.id)) p.pendingApprovals++
+    const act = t.completed_at || t.started_at || t.created_at || 0
+    if (act && (!p.lastActivityAt || act > p.lastActivityAt)) p.lastActivityAt = act
+  }
+
+  return {
+    approvals: pick((i) => i.status === 'blocked' && !!i.approval),
+    blocked: pick((i) => i.status === 'blocked' && !i.approval),
+    inProgress: pick((i) => i.status === 'running'),
+    review: pick((i) => i.status === 'review'),
+    waiting: pick((i) => ['ready', 'todo', 'scheduled'].includes(i.status)),
+    triage: pick((i) => i.status === 'triage'),
+    projects: Array.from(projects.values()).sort(
+      (a, b) => b.pendingApprovals - a.pendingApprovals || b.open - a.open || (b.lastActivityAt || 0) - (a.lastActivityAt || 0)
+    ),
+  }
+}
