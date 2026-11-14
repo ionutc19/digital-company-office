@@ -2,6 +2,8 @@ import Phaser from 'phaser'
 
 // import { debugDraw } from '../utils/debug'
 import { createCharacterAnims } from '../anims/CharacterAnims'
+import AgentNpcManager from '../digital-company/AgentNpcManager'
+import { TiledMap } from '../digital-company/officeGrid'
 
 import Item from '../items/Item'
 import Chair from '../items/Chair'
@@ -24,6 +26,7 @@ import { NavKeys, Keyboard } from '../../../types/KeyboardState'
 
 export default class Game extends Phaser.Scene {
   network!: Network
+  private agentNpcs?: AgentNpcManager
   private cursors!: NavKeys
   private keyE!: Phaser.Input.Keyboard.Key
   private keyR!: Phaser.Input.Keyboard.Key
@@ -135,6 +138,9 @@ export default class Game extends Phaser.Scene {
     this.addGroupFromTiled('GenericObjects', 'generic', 'Generic', false)
     this.addGroupFromTiled('GenericObjectsOnCollide', 'generic', 'Generic', true)
     this.addGroupFromTiled('Basement', 'basement', 'Basement', true)
+
+    // Digital Company agents: local NPCs driven by live Hermes Kanban status.
+    this.agentNpcs = new AgentNpcManager(this, this.cache.tilemap.get('tilemap').data as TiledMap)
 
     this.otherPlayers = this.physics.add.group({ classType: OtherPlayer })
 

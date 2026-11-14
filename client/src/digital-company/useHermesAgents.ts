@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { AgentStatus } from './agentStatus'
+import { publishAgentStatus } from './agentStatusStore'
 
 export interface HermesAgentTask {
   id: string
@@ -49,12 +50,18 @@ export function useHermesAgents() {
         setAgents(data.agents)
         setConnected(true)
         setLastUpdated(data.generatedAt)
+        publishAgentStatus({
+          connected: true,
+          agents: data.agents.map((a) => ({ id: a.id, status: a.status, taskTitle: a.task?.title ?? null })),
+          receivedAt: Date.now(),
+        })
       } catch (error) {
         console.error('Unable to read Hermes agent status:', error)
 
         if (!active) return
 
         setConnected(false)
+        publishAgentStatus({ connected: false, agents: [], receivedAt: Date.now() })
       }
     }
 
