@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import { strict as assert } from 'assert'
 
-import { activeTaskForProfile, approvalFromShow, buildAgentStates, mapStatus, parseKanbanTasks, AGENTS, HermesTask } from './status'
+import { activeTaskForProfile, approvalFromShow, recentTasksForProfile, buildAgentStates, mapStatus, parseKanbanTasks, AGENTS, HermesTask } from './status'
 
 const task = (over: Partial<HermesTask>): HermesTask => ({
   id: 't1',
@@ -110,4 +110,16 @@ test('John keeps working when busy, even with approvals pending', () => {
   ]
   const states = buildAgentStates(tasks, new Map([['b1', 'security' as const]]))
   assert.equal(states.find((s) => s.id === 'john')?.status, 'working')
+})
+
+test('recent tasks: newest first, archived excluded, limited', () => {
+  const tasks = [
+    task({ id: 'old', created_at: 1 }),
+    task({ id: 'done', status: 'done', created_at: 2, completed_at: 50 }),
+    task({ id: 'arch', status: 'archived', created_at: 99 }),
+    task({ id: 'run', status: 'running', created_at: 3, started_at: 40 }),
+    task({ id: 'other', assignee: 'qa-validator', created_at: 100 }),
+  ]
+  assert.deepEqual(recentTasksForProfile(tasks, 'cloud-engineer').map((t) => t.id), ['done', 'run', 'old'])
+  assert.equal(recentTasksForProfile(tasks, 'cloud-engineer', 1).length, 1)
 })

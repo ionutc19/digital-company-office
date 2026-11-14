@@ -22,6 +22,7 @@ export interface HermesTask {
   last_failure_error: string | null
   created_at: number | null
   started_at: number | null
+  completed_at?: number | null
 }
 
 export interface AgentDefinition {
@@ -128,7 +129,8 @@ export function parseKanbanTasks(payload: unknown): ParseResult {
       isStrOrNull(t.project_id) &&
       isStrOrNull(t.last_failure_error) &&
       isNumOrNull(t.created_at) &&
-      isNumOrNull(t.started_at)
+      isNumOrNull(t.started_at) &&
+      isNumOrNull(t.completed_at)
     ) {
       tasks.push({
         id: t.id,
@@ -139,6 +141,7 @@ export function parseKanbanTasks(payload: unknown): ParseResult {
         last_failure_error: (t.last_failure_error as string | null) ?? null,
         created_at: (t.created_at as number | null) ?? null,
         started_at: (t.started_at as number | null) ?? null,
+        completed_at: (t.completed_at as number | null) ?? null,
       })
     } else {
       rejected++
@@ -215,4 +218,21 @@ export function buildAgentStates(tasks: HermesTask[], approvals: Map<string, App
         : null,
     }
   })
+}
+
+const lastActivity = (t: HermesTask) => t.completed_at || t.started_at || t.created_at || 0
+
+/** Most recent tasks of one profile (any status except archived), newest first. */
+export function recentTasksForProfile(tasks: HermesTask[], profile: string, limit = 8) {
+  return tasks
+    .filter((t) => t.assignee === profile && t.status !== 'archived')
+    .sort((a, b) => lastActivity(b) - lastActivity(a))
+    .slice(0, limit)
+    .map((t) => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      projectId: t.project_id,
+      lastActivityAt: lastActivity(t) || null,
+    }))
 }
