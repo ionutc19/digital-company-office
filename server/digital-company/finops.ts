@@ -8,8 +8,8 @@
  * is passed as DC_DASHBOARD_TOKEN_FILE. Without it, FinOps reports
  * "unavailable" with a reason instead of inventing numbers.
  */
-import fs from 'fs'
-import http from 'http'
+import * as fs from 'fs'
+import * as http from 'http'
 
 import { AGENTS } from './status'
 
