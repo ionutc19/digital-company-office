@@ -11,9 +11,22 @@ import { SkyOffice } from './rooms/SkyOffice'
 import digitalCompanyRouter from './digital-company/router'
 
 const port = Number(process.env.PORT || 2567)
+// Local cockpit: bind to loopback unless explicitly overridden.
+const host = process.env.HOST || '127.0.0.1'
+const allowedOrigins = (
+  process.env.DC_ALLOWED_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173'
+)
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean)
 const app = express()
 
-app.use(cors())
+app.use(
+  cors({
+    // Same-origin requests (no Origin header, e.g. via the Vite proxy) are allowed.
+    origin: (origin, callback) => callback(null, !origin || allowedOrigins.includes(origin)),
+  })
+)
 app.use(express.json())
 app.use('/api/digital-company', digitalCompanyRouter)
 // app.use(express.static('dist'))
@@ -41,9 +54,13 @@ gameServer.define(RoomType.CUSTOM, SkyOffice).enableRealtimeListing()
  */
 // app.use("/", socialRoutes);
 
-// register colyseus monitor AFTER registering your room handlers
-app.use('/colyseus', monitor())
+// Colyseus monitor has no authentication: opt-in only, for local debugging.
+// Register it AFTER the room handlers.
+if (process.env.ENABLE_COLYSEUS_MONITOR === '1') {
+  app.use('/colyseus', monitor())
+}
 
-gameServer.listen(port)
-console.log(`Listening on ws://localhost:${port}`)
+gameServer.listen(port, host).then(() => {
+  console.log(`Listening on ws://${host}:${port}`)
+})
 
