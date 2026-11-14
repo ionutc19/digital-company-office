@@ -8,8 +8,9 @@
  * is passed as DC_DASHBOARD_TOKEN_FILE. Without it, FinOps reports
  * "unavailable" with a reason instead of inventing numbers.
  */
-import * as fs from 'fs'
 import * as http from 'http'
+
+import { DASHBOARD_URL, readDashboardToken } from './dashboardAuth'
 
 import { AGENTS } from './status'
 
@@ -120,21 +121,9 @@ export function aggregateFinOps(
 // ---------------------------------------------------------------------------
 // I/O: fetch from the local Dashboard with a short timeout and a cache.
 
-const DASHBOARD_URL = (process.env.DC_DASHBOARD_URL || 'http://127.0.0.1:9119').replace(/\/$/, '')
 const CACHE_MS = Number(process.env.DC_FINOPS_CACHE_MS || 60000)
 const TIMEOUT_MS = 10000
-
-function readToken(): string | null {
-  if (process.env.DC_DASHBOARD_TOKEN) return process.env.DC_DASHBOARD_TOKEN
-  const file = process.env.DC_DASHBOARD_TOKEN_FILE
-  if (!file) return null
-  try {
-    const t = fs.readFileSync(file, 'utf8').trim()
-    return t || null
-  } catch {
-    return null
-  }
-}
+const readToken = readDashboardToken
 
 function fetchUsage(token: string, days: number, profile: string | null): Promise<DashboardUsage> {
   const qs = new URLSearchParams({ days: String(days) })

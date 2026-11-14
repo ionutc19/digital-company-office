@@ -54,12 +54,48 @@ export interface ProjectCompliance {
   otherFrameworks: string[]
   evidence: string[]
   openQuestions: string[]
+  itsm: ItsmClassification
+}
+
+export const ITSM_TYPES = ['REQUEST', 'CHANGE', 'INCIDENT', 'PROBLEM', 'PROJECT'] as const
+export interface ItsmClassification {
+  type: string
+  changeType: string
+  riskLevel: string | null
+}
+
+/** Parses "## ITSM Classification" (Type / Change Type / Risk Level). */
+export function parseItsm(markdown: string): ItsmClassification {
+  const lines = markdown.replace(/\r\n/g, '\n').split('\n')
+  const start = lines.findIndex((l) => /^##\s+ITSM Classification\s*$/i.test(l.trim()))
+  const out: ItsmClassification = { type: 'UNCLASSIFIED', changeType: 'N/A', riskLevel: null }
+  if (start < 0) return out
+  const section: string[] = []
+  for (let i = start + 1; i < lines.length && !/^##\s/.test(lines[i]); i++) section.push(lines[i])
+  const valueOf = (key: string): string | null => {
+    const idx = section.findIndex((l) => l.trim().toLowerCase().startsWith(`${key.toLowerCase()}:`))
+    if (idx < 0) return null
+    const same = section[idx].trim().slice(key.length + 1).trim()
+    if (same) return same
+    const next = section.slice(idx + 1).find((l) => l.trim())
+    return next && !/^[A-Za-z ]+:\s*/.test(next.trim()) ? next.trim() : null
+  }
+  const pick = (raw: string | null, allowed: readonly string[], fallback: string) => {
+    if (!raw || raw.includes('/')) return fallback // template still lists the options
+    const v = raw.toUpperCase()
+    return allowed.includes(v) ? v : fallback
+  }
+  out.type = pick(valueOf('Type'), ITSM_TYPES, 'UNCLASSIFIED')
+  out.changeType = pick(valueOf('Change Type'), ['STANDARD', 'NORMAL', 'EMERGENCY', 'N/A'], 'N/A')
+  const risk = valueOf('Risk Level')
+  out.riskLevel = risk && !risk.includes('/') ? risk : null
+  return out
 }
 
 const KEY_LINE = /^([A-Za-z0-9_ ]+):\s*(.*)$/
 
 /** Parses the "## Compliance Profile" section of a Project Memory file. */
-export function parseComplianceProfile(markdown: string): Omit<ProjectCompliance, 'file'> & { projectId: string | null } {
+export function parseComplianceProfile(markdown: string): Omit<ProjectCompliance, 'file' | 'itsm'> & { projectId: string | null } {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n')
   const header = (key: string) => {
     const l = lines.find((x) => x.toLowerCase().startsWith(`${key.toLowerCase()}:`))
@@ -183,8 +219,9 @@ export function loadProjects(root = companyRoot()): { projects: ProjectComplianc
     const file = path.join(dir, e.name, 'PROJECT.md')
     try {
       if (fs.statSync(file).size > MAX_FILE_BYTES) continue
-      const parsed = parseComplianceProfile(fs.readFileSync(file, 'utf8'))
-      projects.push({ ...parsed, projectId: parsed.projectId || e.name, file: path.relative(root, file) })
+      const text = fs.readFileSync(file, 'utf8')
+      const parsed = parseComplianceProfile(text)
+      projects.push({ ...parsed, itsm: parseItsm(text), projectId: parsed.projectId || e.name, file: path.relative(root, file) })
     } catch {
       // Missing or unreadable PROJECT.md: skip the folder.
     }

@@ -3,7 +3,8 @@ import fs from 'fs'
 import path from 'path'
 import { Router } from 'express'
 
-import { buildCompliance, loadProjects } from './compliance'
+import { ActivityFeed, describeEvent } from './activity'
+import { buildCompliance, ITSM_TYPES, loadProjects } from './compliance'
 import { loadFinOps } from './finops'
 
 import {
@@ -214,6 +215,65 @@ router.get('/compliance', async (_req, res) => {
     projectMemoryError: error,
     ...buildCompliance(entry.tasks || [], entry.approvals, projects),
   })
+})
+
+const activityFeed = new ActivityFeed()
+
+/** Newest Kanban events, enriched with task title, agent and project. */
+router.get('/activity', async (req, res) => {
+  activityFeed.ensureStarted()
+  const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 100))
+  const entry = await loadKanban()
+  const tasks = new Map((entry.tasks || []).map((t) => [t.id, t]))
+  const agents = new Map(AGENTS.map((a) => [a.profile, a]))
+  res.set('Cache-Control', 'no-store')
+  res.json({
+    source: 'hermes-kanban-events',
+    generatedAt: new Date().toISOString(),
+    connected: activityFeed.state.connected,
+    reason: activityFeed.state.connected ? null : activityFeed.state.lastError,
+    events: activityFeed.buffer.newest(limit).map((e) => {
+      const t = tasks.get(e.task_id)
+      const agent = t?.assignee ? agents.get(t.assignee) : undefined
+      return {
+        id: e.id,
+        taskId: e.task_id,
+        title: t?.title ?? null,
+        agentId: agent?.id ?? null,
+        agentName: agent?.name ?? t?.assignee ?? null,
+        projectId: t?.project_id ?? null,
+        kind: e.kind,
+        summary: describeEvent(e.kind, e.payload),
+        createdAt: e.created_at,
+      }
+    }),
+  })
+})
+
+/** Projects grouped by ITSM type (Project Memory) with their open Kanban work. */
+router.get('/itsm', async (_req, res) => {
+  const entry = await loadKanban()
+  const { projects, error } = loadProjects()
+  const open = (entry.tasks || []).filter((t) => !['done', 'archived'].includes(t.status))
+  const rooms = [...ITSM_TYPES, 'UNCLASSIFIED'].map((type) => ({
+    type,
+    projects: projects
+      .filter((p) => p.itsm.type === type)
+      .map((p) => {
+        const tasks = open.filter((t) => t.project_id === p.projectId)
+        return {
+          projectId: p.projectId,
+          name: p.name,
+          changeType: p.itsm.changeType,
+          riskLevel: p.itsm.riskLevel,
+          openTasks: tasks.length,
+          blocked: tasks.filter((t) => t.status === 'blocked').length,
+          awaitingIonut: tasks.filter((t) => t.status === 'blocked' && entry.approvals.has(t.id)).length,
+        }
+      }),
+  }))
+  res.set('Cache-Control', 'no-store')
+  res.json({ generatedAt: new Date().toISOString(), kanbanAvailable: !!entry.tasks, projectMemoryError: error, rooms })
 })
 
 router.get('/finops', async (req, res) => {
