@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "notes": "Digital Company office layout over client/public/assets/map/map.json (40x30 tiles of 32px). Workstations reference Chair objects by their Tiled x/y. Areas are tile rectangles [x, y, width, height]. Validated by layout.test.ts against the real map.",
+  "agents": {
+    "john": { "texture": "adam", "tint": "#ffffff", "workstation": { "chairX": 960, "chairY": 192 } },
+    "goku": { "texture": "ash", "tint": "#ffd28a", "workstation": { "chairX": 1088, "chairY": 480 } },
+    "alakazam": { "texture": "lucy", "tint": "#f5d0ff", "workstation": { "chairX": 1184, "chairY": 480 } },
+    "piccolo": { "texture": "adam", "tint": "#b8f5b0", "workstation": { "chairX": 992, "chairY": 576 } },
+    "bulma": { "texture": "nancy", "tint": "#b5e3ff", "workstation": { "chairX": 1088, "chairY": 576 } },
+    "gengar": { "texture": "ash", "tint": "#d4b8ff", "workstation": { "chairX": 1184, "chairY": 576 } },
+    "charizard": { "texture": "adam", "tint": "#ffb59a", "workstation": { "chairX": 992, "chairY": 736 } },
+    "pikachu": { "texture": "lucy", "tint": "#fff3a0", "workstation": { "chairX": 1088, "chairY": 736 } },
+    "machamp": { "texture": "ash", "tint": "#c9d6e3", "workstation": { "chairX": 1184, "chairY": 736 } },
+    "porygon": { "texture": "nancy", "tint": "#ffc4dd", "workstation": { "chairX": 992, "chairY": 832 } },
+    "psyduck": { "texture": "lucy", "tint": "#ffe08a", "workstation": { "chairX": 1184, "chairY": 832 } }
+  },
+  "areas": {
+    "lounge": { "label": "Lounge", "rect": [6, 6, 13, 4] },
+    "waiting": { "label": "Waiting Area", "rect": [6, 12, 14, 3] },
+    "review": { "label": "Review Room", "rect": [6, 16, 13, 8] },
+    "approval": { "label": "Approval Room", "rect": [20, 2, 13, 6] },
+    "blocked": { "label": "War Room", "rect": [25, 25, 6, 4] },
+    "offline": { "label": "Offline", "rect": [20, 25, 4, 4] }
+  }
+}
