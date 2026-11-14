@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import { strict as assert } from 'assert'
 
-import { activeTaskForProfile, approvalFromShow, recentTasksForProfile, buildAgentStates, mapStatus, parseKanbanTasks, AGENTS, HermesTask } from './status'
+import { activeTaskForProfile, approvalFromShow, buildOverview, recentTasksForProfile, buildAgentStates, mapStatus, parseKanbanTasks, AGENTS, HermesTask } from './status'
 
 const task = (over: Partial<HermesTask>): HermesTask => ({
   id: 't1',
@@ -122,4 +122,30 @@ test('recent tasks: newest first, archived excluded, limited', () => {
   ]
   assert.deepEqual(recentTasksForProfile(tasks, 'cloud-engineer').map((t) => t.id), ['done', 'run', 'old'])
   assert.equal(recentTasksForProfile(tasks, 'cloud-engineer', 1).length, 1)
+})
+
+test('overview groups work for John and summarises projects', () => {
+  const tasks = [
+    task({ id: 'a1', assignee: 'finops-lead', status: 'blocked', project_id: 'DC-0001', created_at: 5 }),
+    task({ id: 'b1', assignee: 'network-engineer', status: 'blocked', project_id: 'DC-0001', created_at: 3 }),
+    task({ id: 'r1', assignee: 'cloud-engineer', status: 'review', project_id: 'DC-0002', created_at: 4 }),
+    task({ id: 'w1', assignee: 'iac-engineer', status: 'running', project_id: 'DC-0002', started_at: 9 }),
+    task({ id: 'q1', assignee: 'qa-validator', status: 'ready', project_id: null }),
+    task({ id: 'd1', assignee: 'qa-validator', status: 'done', project_id: 'DC-0002', completed_at: 20 }),
+    task({ id: 'x1', status: 'archived', project_id: 'DC-0003' }),
+  ]
+  const o = buildOverview(tasks, new Map([['a1', 'budget' as const]]))
+  assert.deepEqual(o.approvals.map((i) => [i.taskId, i.approval, i.agentName]), [['a1', 'budget', 'Piccolo']])
+  assert.deepEqual(o.blocked.map((i) => i.taskId), ['b1'])
+  assert.deepEqual(o.review.map((i) => i.taskId), ['r1'])
+  assert.deepEqual(o.inProgress.map((i) => i.taskId), ['w1'])
+  assert.deepEqual(o.waiting.map((i) => i.taskId), ['q1'])
+  // DC-0001 first (pending approval), archived project excluded, Unassigned bucket present
+  assert.deepEqual(o.projects.map((p) => p.projectId), ['DC-0001', 'DC-0002', 'Unassigned'])
+  const p2 = o.projects.find((p) => p.projectId === 'DC-0002')!
+  assert.equal(p2.total, 3)
+  assert.equal(p2.open, 2)
+  assert.equal(p2.byStatus.done, 1)
+  assert.equal(p2.friendly, true)
+  assert.equal(o.projects.find((p) => p.projectId === 'Unassigned')!.friendly, false)
 })
