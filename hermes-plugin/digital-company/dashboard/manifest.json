@@ -1,0 +1,13 @@
+{
+  "name": "digital-company",
+  "label": "Office",
+  "description": "Digital Company Virtual Office: live agent NPCs, John's Control Center, FinOps, compliance and activity, from Hermes Kanban. Read-only, no LLM calls.",
+  "icon": "Activity",
+  "version": "0.1.0",
+  "tab": {
+    "path": "/digital-company",
+    "position": "after:kanban"
+  },
+  "entry": "dist/index.js",
+  "api": "plugin_api.py"
+}
