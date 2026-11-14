@@ -54,3 +54,20 @@ export function subscribeCompliance(listener: Listener): () => void {
     complianceListeners.delete(listener)
   }
 }
+
+/** Open/closed state of the Activity & ITSM panel. */
+let activityOpen = false
+const activityListeners = new Set<Listener>()
+
+export function setActivityOpen(open: boolean): void {
+  activityOpen = open
+  activityListeners.forEach((l) => l(activityOpen))
+}
+
+export function subscribeActivity(listener: Listener): () => void {
+  activityListeners.add(listener)
+  listener(activityOpen)
+  return () => {
+    activityListeners.delete(listener)
+  }
+}

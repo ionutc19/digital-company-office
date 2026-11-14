@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 
 import { selectAgent, timeAgo } from '../digital-company/agentSelection'
-import { setComplianceOpen, setControlCenterOpen, setFinOpsOpen, subscribeControlCenter } from '../digital-company/controlCenter'
+import { setActivityOpen, setComplianceOpen, setControlCenterOpen, setFinOpsOpen, subscribeControlCenter } from '../digital-company/controlCenter'
 import { getHermesKanbanUrl } from '../digital-company/hermesLinks'
 
 interface Item {
@@ -281,6 +281,9 @@ export default function ControlCenterPanel() {
           </button>
           <button type="button" onClick={() => setComplianceOpen(true)}>
             Compliance
+          </button>
+          <button type="button" onClick={() => setActivityOpen(true)}>
+            Activity
           </button>
           <button type="button" onClick={() => window.open(getHermesKanbanUrl(), '_blank', 'noopener,noreferrer')}>
             Kanban
