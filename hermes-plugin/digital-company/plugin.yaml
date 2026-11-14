@@ -1,0 +1,4 @@
+name: digital-company
+version: 0.1.0
+description: "Digital Company Virtual Office dashboard tab (read-only view of Hermes Kanban, Project Memory and analytics). Registers no tools, hooks or commands."
+kind: standalone

@@ -127,3 +127,14 @@ def test_company_root_from_config_json(api, monkeypatch, tmp_path):
     (cfg_dir / "config.json").write_text(json.dumps({"company_root": "D:/github/digital-company"}))
     monkeypatch.setattr(mod, "PLUGIN_DIR", cfg_dir)
     assert str(mod._company_root()).replace("\\", "/") == "D:/github/digital-company"
+
+
+def test_plugin_package_registers_nothing():
+    root = Path(__file__).resolve().parents[1] / "digital-company"
+    spec = importlib.util.spec_from_file_location("dc_plugin_pkg", root / "__init__.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert mod.register(object()) is None
+    manifest = json.loads((root / "dashboard" / "manifest.json").read_text())
+    assert manifest["name"] == "digital-company" and manifest["api"] == "plugin_api.py"
+    assert "name: digital-company" in (root / "plugin.yaml").read_text()
