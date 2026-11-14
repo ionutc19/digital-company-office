@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { apiGet } from '../digital-company/api'
 import styled from 'styled-components'
 
 import { selectAgent } from '../digital-company/agentSelection'
@@ -219,9 +220,7 @@ export default function CompliancePanel() {
     let active = true
     const load = async () => {
       try {
-        const res = await fetch('/api/digital-company/compliance', { cache: 'no-store' })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const body = (await res.json()) as ComplianceData
+        const body = await apiGet<ComplianceData>('/compliance')
         if (active) {
           setData(body)
           setError(null)

@@ -92,7 +92,7 @@ export function parseItsm(markdown: string): ItsmClassification {
 const KEY_LINE = /^([A-Za-z0-9_ ]+):\s*(.*)$/
 
 /** Parses the "## Compliance Profile" section of a Project Memory file. */
-export function parseComplianceProfile(markdown: string): Omit<ProjectCompliance, 'file' | 'itsm'> & { projectId: string | null } {
+export function parseComplianceProfile(markdown: string): Omit<ProjectCompliance, 'file' | 'itsm' | 'projectId'> & { projectId: string | null } {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n')
   const header = (key: string) => {
     const l = lines.find((x) => x.toLowerCase().startsWith(`${key.toLowerCase()}:`))
@@ -191,4 +191,30 @@ export function buildCompliance(
     }))
 
   return { disclaimer: DISCLAIMER, frameworks: FRAMEWORKS, projects, tasks: complianceTasks, securityApprovals }
+}
+
+/** Projects grouped by ITSM type with their open Kanban work. */
+export function buildItsmRooms(
+  projects: Array<Pick<ProjectCompliance, 'projectId' | 'name' | 'itsm'>>,
+  tasks: HermesTask[],
+  approvals: Map<string, ApprovalCategory>
+) {
+  const open = tasks.filter((t) => !['done', 'archived'].includes(t.status))
+  return [...ITSM_TYPES, 'UNCLASSIFIED'].map((type) => ({
+    type,
+    projects: projects
+      .filter((p) => p.itsm.type === type)
+      .map((p) => {
+        const mine = open.filter((t) => t.project_id === p.projectId)
+        return {
+          projectId: p.projectId,
+          name: p.name,
+          changeType: p.itsm.changeType,
+          riskLevel: p.itsm.riskLevel,
+          openTasks: mine.length,
+          blocked: mine.filter((t) => t.status === 'blocked').length,
+          awaitingIonut: mine.filter((t) => t.status === 'blocked' && approvals.has(t.id)).length,
+        }
+      }),
+  }))
 }

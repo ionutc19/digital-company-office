@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { apiGet } from '../digital-company/api'
 import styled from 'styled-components'
 
 import { Event, phaserEvents } from '../events/EventCenter'
@@ -196,9 +197,7 @@ export default function AgentDetailPanel() {
     let active = true
     const load = async () => {
       try {
-        const res = await fetch(`/api/digital-company/agents/${encodeURIComponent(agentId)}`, { cache: 'no-store' })
-        if (!res.ok) throw new Error(res.status === 503 ? 'Hermes Kanban is unavailable' : `HTTP ${res.status}`)
-        const body = (await res.json()) as AgentDetailResponse
+        const body = await apiGet<AgentDetailResponse>(`/agents/${encodeURIComponent(agentId)}`)
         if (active) {
           setData(body)
           setError(null)

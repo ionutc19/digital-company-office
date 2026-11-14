@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { apiGet } from '../digital-company/api'
 import styled from 'styled-components'
 
 import { selectAgent } from '../digital-company/agentSelection'
@@ -170,9 +171,7 @@ export default function FinOpsPanel() {
     let active = true
     const load = async () => {
       try {
-        const res = await fetch(`/api/digital-company/finops?days=${days}`, { cache: 'no-store' })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const body = (await res.json()) as FinOps
+        const body = await apiGet<FinOps>(`/finops?days=${days}`)
         if (active) {
           setData(body)
           setError(null)

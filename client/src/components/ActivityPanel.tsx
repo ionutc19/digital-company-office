@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { apiGet } from '../digital-company/api'
 import styled from 'styled-components'
 
 import { selectAgent, timeAgo } from '../digital-company/agentSelection'
@@ -208,12 +209,7 @@ export default function ActivityPanel() {
     let active = true
     const load = async () => {
       try {
-        const [a, i] = await Promise.all([
-          fetch('/api/digital-company/activity?limit=100', { cache: 'no-store' }),
-          fetch('/api/digital-company/itsm', { cache: 'no-store' }),
-        ])
-        if (!a.ok || !i.ok) throw new Error(`HTTP ${a.ok ? i.status : a.status}`)
-        const [ad, id] = [(await a.json()) as ActivityData, (await i.json()) as ItsmData]
+        const [ad, id] = await Promise.all([apiGet<ActivityData>('/activity?limit=100'), apiGet<ItsmData>('/itsm')])
         if (active) {
           setActivity(ad)
           setItsm(id)
