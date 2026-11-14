@@ -3,6 +3,7 @@ import { strict as assert } from 'assert'
 import * as fs from 'fs'
 import * as path from 'path'
 
+import { timeAgo, toDate } from './agentSelection'
 import { buildWalkGrid, compressPath, findPath, isWalkable, readSeats, TiledMap } from './officeGrid'
 import { areaSpots, AreaKind, OfficeLayout, seededRandom, SpotAllocator, workstationSpot, zoneForStatus } from './officeZones'
 
@@ -96,4 +97,12 @@ test('seeded random is deterministic', () => {
   const r1 = seededRandom(42)
   const r2 = seededRandom(42)
   for (let i = 0; i < 5; i++) assert.equal(r1(), r2())
+})
+
+test('timeAgo handles Hermes Unix seconds and milliseconds', () => {
+  const now = Date.UTC(2026, 10, 14, 12, 0, 0)
+  assert.equal(timeAgo(now / 1000 - 90, now), '1m ago')
+  assert.equal(timeAgo(now - 2 * 3600 * 1000, now), '2h ago')
+  assert.equal(timeAgo(null, now), '')
+  assert.equal(toDate(0), null)
 })

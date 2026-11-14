@@ -8,10 +8,8 @@ import {
   agentStatusColor,
   agentStatusLabel,
 } from '../digital-company/agentStatus'
-import {
-  getHermesKanbanUrl,
-  getHermesProfileUrl,
-} from '../digital-company/hermesLinks'
+import { getHermesKanbanUrl } from '../digital-company/hermesLinks'
+import { selectAgent } from '../digital-company/agentSelection'
 
 const Panel = styled.aside`
   position: fixed;
@@ -177,14 +175,8 @@ export default function AgentRosterPanel() {
               <AgentCard
                 type="button"
                 key={agent.id}
-                title={`Open ${agent.name} in Hermes`}
-                onClick={() =>
-                  window.open(
-                    getHermesProfileUrl(agent.hermesProfile),
-                    '_blank',
-                    'noopener,noreferrer'
-                  )
-                }
+                title={`Show ${agent.name} details`}
+                onClick={() => selectAgent(agent.id)}
               >
                 <StatusDot
                   $color={agentStatusColor[agent.status]}

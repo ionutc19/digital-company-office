@@ -11,6 +11,7 @@ import Chat from './components/Chat'
 import HelperButtonGroup from './components/HelperButtonGroup'
 import MobileVirtualJoystick from './components/MobileVirtualJoystick'
 import AgentRosterPanel from './components/AgentRosterPanel'
+import AgentDetailPanel from './components/AgentDetailPanel'
 
 const Backdrop = styled.div`
   position: absolute;
@@ -38,6 +39,7 @@ function App() {
           <Chat />
           <MobileVirtualJoystick />
           <AgentRosterPanel />
+          <AgentDetailPanel />
         </>
       )
     }
