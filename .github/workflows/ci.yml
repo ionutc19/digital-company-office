@@ -11,6 +11,7 @@ permissions:
 jobs:
   build-test:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
         node: ['22', '26']
@@ -28,9 +29,9 @@ jobs:
         shell: bash
         run: |
           node -v; yarn -v
-          yarn install --frozen-lockfile --ignore-engines
-          (cd types && yarn install --frozen-lockfile --ignore-engines)
-          (cd client && yarn install --frozen-lockfile --ignore-engines)
+          yarn install --frozen-lockfile
+          (cd types && yarn install --frozen-lockfile)
+          (cd client && yarn install --frozen-lockfile)
       - name: Server typecheck + adapter tests
         run: |
           yarn typecheck

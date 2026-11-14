@@ -4,12 +4,14 @@ Fork of SkyOffice customised as the operational cockpit of the Digital Company
 Hermes fleet. Branches: `master` = vanilla SkyOffice (tag
 `skyoffice-vanilla-baseline`), `digital-company` = working branch.
 
-**Runtime:** Node.js 22 LTS (`.nvmrc`, `engines`; the Hermes Windows installer
-already puts Node 22 first on PATH) and Yarn 1.22.22 (`packageManager`).
+**Runtime:** Node.js 26 LTS on the workstation (`.nvmrc`; `engines` accepts
+22-26, both tested in CI). The Hermes installer reuses a system Node 22.22+,
+24.11+ or 26+. Yarn 1.22.22 (`packageManager`); Node 25+ has no Corepack, so
+install it with `npm install -g yarn@1.22.22`.
 Registry and network timeout are set per project in `.yarnrc`.
 
 ```powershell
-corepack enable          # once per machine; provides yarn 1.22.22
+npm install -g yarn@1.22.22   # once per machine
 yarn install --frozen-lockfile
 cd types;  yarn install --frozen-lockfile; cd ..
 cd client; yarn install --frozen-lockfile; cd ..
