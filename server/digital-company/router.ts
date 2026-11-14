@@ -3,7 +3,15 @@ import fs from 'fs'
 import path from 'path'
 import { Router } from 'express'
 
-import { ApprovalCategory, approvalFromShow, buildAgentStates, HermesTask, parseKanbanTasks } from './status'
+import {
+  AGENTS,
+  ApprovalCategory,
+  approvalFromShow,
+  buildAgentStates,
+  HermesTask,
+  parseKanbanTasks,
+  recentTasksForProfile,
+} from './status'
 
 /**
  * Read-only adapter: Hermes Kanban -> `hermes kanban list --json` -> JSON API.
@@ -174,6 +182,27 @@ router.get('/agents', async (_req, res) => {
     source: 'hermes-kanban',
     generatedAt: new Date(entry.at).toISOString(),
     agents: buildAgentStates(entry.tasks, entry.approvals),
+  })
+})
+
+router.get('/agents/:id', async (req, res) => {
+  const def = AGENTS.find((a) => a.id === req.params.id)
+  if (!def) {
+    res.status(404).json({ error: 'Unknown agent' })
+    return
+  }
+  const entry = await loadKanban()
+  res.set('Cache-Control', 'no-store')
+  if (!entry.tasks) {
+    res.status(503).json({ source: 'hermes-kanban', error: entry.error })
+    return
+  }
+  const state = buildAgentStates(entry.tasks, entry.approvals).find((a) => a.id === def.id)
+  res.json({
+    source: 'hermes-kanban',
+    generatedAt: new Date(entry.at).toISOString(),
+    agent: state,
+    recentTasks: recentTasksForProfile(entry.tasks, def.profile),
   })
 })
 
