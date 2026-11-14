@@ -6,7 +6,7 @@ import { digitalCompanyAgents } from '../digital-company/agents'
 import { AgentStatus, agentStatusColor, agentStatusLabel } from '../digital-company/agentStatus'
 import { selectAgent, subscribeAgentSelection, timeAgo } from '../digital-company/agentSelection'
 import { getHermesKanbanUrl, getHermesProfileUrl } from '../digital-company/hermesLinks'
-import { setControlCenterOpen, setFinOpsOpen } from '../digital-company/controlCenter'
+import { setComplianceOpen, setControlCenterOpen, setFinOpsOpen } from '../digital-company/controlCenter'
 import { HermesAgentState } from '../digital-company/useHermesAgents'
 
 interface RecentTask {
@@ -285,6 +285,11 @@ export default function AgentDetailPanel() {
         <button type="button" onClick={() => open(getHermesProfileUrl(def.hermesProfile))}>
           Chat in Hermes
         </button>
+        {def.hermesProfile === 'compliance-officer' && (
+          <button type="button" className="secondary" onClick={() => setComplianceOpen(true)}>
+            Compliance
+          </button>
+        )}
         {def.hermesProfile === 'finops-lead' && (
           <button type="button" className="secondary" onClick={() => setFinOpsOpen(true)}>
             FinOps

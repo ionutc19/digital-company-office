@@ -14,6 +14,7 @@ import AgentRosterPanel from './components/AgentRosterPanel'
 import AgentDetailPanel from './components/AgentDetailPanel'
 import ControlCenterPanel from './components/ControlCenterPanel'
 import FinOpsPanel from './components/FinOpsPanel'
+import CompliancePanel from './components/CompliancePanel'
 
 const Backdrop = styled.div`
   position: absolute;
@@ -44,6 +45,7 @@ function App() {
           <AgentDetailPanel />
           <ControlCenterPanel />
           <FinOpsPanel />
+          <CompliancePanel />
         </>
       )
     }

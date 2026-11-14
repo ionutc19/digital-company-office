@@ -37,3 +37,20 @@ export function subscribeFinOps(listener: Listener): () => void {
     finOpsListeners.delete(listener)
   }
 }
+
+/** Open/closed state of Bulma's compliance panel. */
+let complianceOpen = false
+const complianceListeners = new Set<Listener>()
+
+export function setComplianceOpen(open: boolean): void {
+  complianceOpen = open
+  complianceListeners.forEach((l) => l(complianceOpen))
+}
+
+export function subscribeCompliance(listener: Listener): () => void {
+  complianceListeners.add(listener)
+  listener(complianceOpen)
+  return () => {
+    complianceListeners.delete(listener)
+  }
+}
