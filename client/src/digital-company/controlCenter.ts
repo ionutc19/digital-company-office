@@ -20,3 +20,20 @@ export function subscribeControlCenter(listener: Listener): () => void {
     listeners.delete(listener)
   }
 }
+
+/** Open/closed state of Piccolo's FinOps panel. */
+let finOpsOpen = false
+const finOpsListeners = new Set<Listener>()
+
+export function setFinOpsOpen(open: boolean): void {
+  finOpsOpen = open
+  finOpsListeners.forEach((l) => l(finOpsOpen))
+}
+
+export function subscribeFinOps(listener: Listener): () => void {
+  finOpsListeners.add(listener)
+  listener(finOpsOpen)
+  return () => {
+    finOpsListeners.delete(listener)
+  }
+}

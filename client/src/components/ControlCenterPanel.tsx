@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 
 import { selectAgent, timeAgo } from '../digital-company/agentSelection'
-import { setControlCenterOpen, subscribeControlCenter } from '../digital-company/controlCenter'
+import { setControlCenterOpen, setFinOpsOpen, subscribeControlCenter } from '../digital-company/controlCenter'
 import { getHermesKanbanUrl } from '../digital-company/hermesLinks'
 
 interface Item {
@@ -276,6 +276,9 @@ export default function ControlCenterPanel() {
           <p>{error ? 'Hermes Kanban unavailable' : data ? `Live from Hermes Kanban · ${new Date(data.generatedAt).toLocaleTimeString()}` : 'Loading…'}</p>
         </div>
         <div>
+          <button type="button" onClick={() => setFinOpsOpen(true)}>
+            FinOps
+          </button>
           <button type="button" onClick={() => window.open(getHermesKanbanUrl(), '_blank', 'noopener,noreferrer')}>
             Kanban
           </button>
