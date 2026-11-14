@@ -3,6 +3,8 @@ import fs from 'fs'
 import path from 'path'
 import { Router } from 'express'
 
+import { loadFinOps } from './finops'
+
 import {
   AGENTS,
   ApprovalCategory,
@@ -198,6 +200,12 @@ router.get('/overview', async (_req, res) => {
     generatedAt: new Date(entry.at).toISOString(),
     ...buildOverview(entry.tasks, entry.approvals),
   })
+})
+
+router.get('/finops', async (req, res) => {
+  const days = Math.min(365, Math.max(1, Number(req.query.days) || 7))
+  res.set('Cache-Control', 'no-store')
+  res.json(await loadFinOps(days))
 })
 
 router.get('/agents/:id', async (req, res) => {
