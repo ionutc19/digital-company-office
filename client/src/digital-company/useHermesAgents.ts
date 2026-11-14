@@ -9,6 +9,8 @@ export interface HermesAgentTask {
   status: string
   projectId: string | null
   lastFailure: string | null
+  /** Set when the task awaits Ionut's decision (HUMAN_APPROVAL block). */
+  approval?: 'budget' | 'security' | 'incident' | 'other' | null
 }
 
 export interface HermesAgentState {
