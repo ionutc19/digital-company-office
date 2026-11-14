@@ -32,6 +32,12 @@ const WALK_SPEED_PX_PER_S = 110
 /** Standing sprites are drawn with their centre above the tile so feet sit inside it. */
 export const STANDING_Y_OFFSET = -12
 
+const OVERLAY_SELECTOR = 'button, a, input, textarea, select, aside, section, [role="dialog"], [data-dc-overlay]'
+
+function startedOnOverlay(target: unknown): boolean {
+  return typeof Element !== 'undefined' && target instanceof Element && target.closest(OVERLAY_SELECTOR) !== null
+}
+
 export default class AgentAvatar {
   readonly agentId: string
   readonly sprite: Phaser.GameObjects.Sprite
@@ -143,7 +149,12 @@ export default class AgentAvatar {
   }
 
   onClick(handler: (agentId: string) => void): void {
-    this.sprite.on('pointerdown', () => handler(this.agentId))
+    this.sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      // Phaser listens on the window, so it also sees clicks made on HTML panels
+      // laid over the canvas. Ignore clicks that started on interactive UI.
+      if (startedOnOverlay(pointer.downElement)) return
+      handler(this.agentId)
+    })
   }
 
   destroy(): void {
