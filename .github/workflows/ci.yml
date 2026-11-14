@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [digital-company, 'claude/**']
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: ['22', '26']
+    runs-on: ${{ matrix.os }}
+    name: build-test (${{ matrix.os }}, node ${{ matrix.node }})
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ matrix.node }}
+      # Node 25+ no longer bundles Corepack; install the pinned Yarn classic.
+      - name: Install Yarn 1.22.22
+        run: npm install -g yarn@1.22.22
+      - name: Install (frozen lockfiles)
+        shell: bash
+        run: |
+          node -v; yarn -v
+          yarn install --frozen-lockfile
+          (cd types && yarn install --frozen-lockfile)
+          (cd client && yarn install --frozen-lockfile)
+      - name: Server typecheck + adapter tests
+        run: |
+          yarn typecheck
+          yarn test
+      - name: Client typecheck + production build
+        working-directory: client
+        run: |
+          yarn typecheck
+          yarn build
