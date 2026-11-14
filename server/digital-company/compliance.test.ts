@@ -4,7 +4,7 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 
-import { buildCompliance, loadProjects, parseComplianceProfile, taskFrameworks } from './compliance'
+import { buildCompliance, loadProjects, parseComplianceProfile, parseItsm, taskFrameworks } from './compliance'
 import { HermesTask } from './status'
 
 const md = `# Project Memory
@@ -103,4 +103,13 @@ test('collects compliance tasks and security approvals', () => {
   assert.deepEqual(c.tasks.find((x) => x.taskId === 's1')!.frameworks, ['NIS2'])
   assert.deepEqual(c.securityApprovals.map((x) => [x.taskId, x.agentName]), [['a1', 'Pikachu']])
   assert.match(c.disclaimer, /not legal advice/)
+})
+
+test('parses ITSM classification; template options mean unclassified', () => {
+  const tpl = '## ITSM Classification\n\nType:\nREQUEST / CHANGE / INCIDENT / PROBLEM / PROJECT\n\nChange Type:\nSTANDARD / NORMAL / EMERGENCY / N/A\n\nRisk Level:\n\n## Compliance Profile\n'
+  assert.deepEqual(parseItsm(tpl), { type: 'UNCLASSIFIED', changeType: 'N/A', riskLevel: null })
+  const filled = '## ITSM Classification\n\nType:\nINCIDENT\n\nChange Type: emergency\n\nRisk Level:\nHigh\n'
+  assert.deepEqual(parseItsm(filled), { type: 'INCIDENT', changeType: 'EMERGENCY', riskLevel: 'High' })
+  assert.equal(parseItsm('# no section').type, 'UNCLASSIFIED')
+  assert.equal(parseItsm('## ITSM Classification\nType: SOMETHING\n').type, 'UNCLASSIFIED')
 })

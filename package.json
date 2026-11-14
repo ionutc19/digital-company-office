@@ -6,7 +6,7 @@
   "scripts": {
     "start": "cd server && ts-node-dev --project tsconfig.server.json --respawn --transpile-only index.ts",
     "heroku-postbuild": "yarn && cd types && yarn && cd ../server && tsc --project tsconfig.server.json",
-    "test": "node -r ts-node/register/transpile-only --test server/digital-company/status.test.ts server/digital-company/finops.test.ts server/digital-company/compliance.test.ts client/src/digital-company/officeLayout.test.ts",
+    "test": "node -r ts-node/register/transpile-only --test --test-timeout=30000 server/digital-company/status.test.ts server/digital-company/finops.test.ts server/digital-company/compliance.test.ts server/digital-company/activity.test.ts client/src/digital-company/officeLayout.test.ts",
     "typecheck": "tsc --project server/tsconfig.server.json --noEmit"
   },
   "repository": {
