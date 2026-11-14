@@ -3,7 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import { Router } from 'express'
 
-import { buildAgentStates, HermesTask, parseKanbanTasks } from './status'
+import { ApprovalCategory, approvalFromShow, buildAgentStates, HermesTask, parseKanbanTasks } from './status'
 
 /**
  * Read-only adapter: Hermes Kanban -> `hermes kanban list --json` -> JSON API.
@@ -14,6 +14,9 @@ import { buildAgentStates, HermesTask, parseKanbanTasks } from './status'
 
 const CACHE_TTL_MS = Number(process.env.DC_KANBAN_CACHE_MS || 3000)
 const CLI_TIMEOUT_MS = Number(process.env.DC_KANBAN_TIMEOUT_MS || 15000)
+/** Blocked-task details change rarely; re-read each task at most this often. */
+const APPROVAL_TTL_MS = Number(process.env.DC_APPROVAL_CACHE_MS || 15000)
+const MAX_APPROVAL_LOOKUPS = 20
 
 function resolveHermesExe(): string {
   const fromEnv = process.env.HERMES_EXE
@@ -41,12 +44,63 @@ if (/\.(cmd|bat)$/i.test(hermesExe)) {
 interface CacheEntry {
   at: number
   tasks: HermesTask[] | null
+  approvals: Map<string, ApprovalCategory>
   error: string | null
 }
 
-let cache: CacheEntry = { at: 0, tasks: null, error: null }
+let cache: CacheEntry = { at: 0, tasks: null, approvals: new Map(), error: null }
+const approvalCache = new Map<string, { at: number; category: ApprovalCategory | null }>()
 let inFlight: Promise<CacheEntry> | null = null
 let lastLoggedError: string | null = null
+
+function runHermesJson(args: string[]): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    execFile(
+      hermesExe,
+      args,
+      { windowsHide: true, timeout: CLI_TIMEOUT_MS, maxBuffer: 8 * 1024 * 1024 },
+      (error, stdout) => {
+        if (error) {
+          reject(error)
+          return
+        }
+        try {
+          resolve(JSON.parse(stdout))
+        } catch (parseError) {
+          reject(parseError)
+        }
+      }
+    )
+  })
+}
+
+/**
+ * HUMAN_APPROVAL lives in the block event of a task, which `kanban list`
+ * does not expose. Read `kanban show` only for blocked tasks, with a cache.
+ * A failed lookup degrades to "plain blocked", never to an error.
+ */
+async function loadApprovals(tasks: HermesTask[]): Promise<Map<string, ApprovalCategory>> {
+  const result = new Map<string, ApprovalCategory>()
+  const blocked = tasks.filter((t) => t.status === 'blocked').slice(0, MAX_APPROVAL_LOOKUPS)
+  const blockedIds = new Set(blocked.map((t) => t.id))
+  approvalCache.forEach((_v, id) => {
+    if (!blockedIds.has(id)) approvalCache.delete(id)
+  })
+  for (const t of blocked) {
+    let entry = approvalCache.get(t.id)
+    if (!entry || Date.now() - entry.at > APPROVAL_TTL_MS) {
+      try {
+        entry = { at: Date.now(), category: approvalFromShow(await runHermesJson(['kanban', 'show', t.id, '--json'])) }
+      } catch (err) {
+        console.warn(`[digital-company] could not read details of blocked task ${t.id}:`, (err as Error).message)
+        entry = { at: Date.now(), category: null }
+      }
+      approvalCache.set(t.id, entry)
+    }
+    if (entry.category) result.set(t.id, entry.category)
+  }
+  return result
+}
 
 function runKanbanList(): Promise<HermesTask[]> {
   return new Promise((resolve, reject) => {
@@ -75,10 +129,11 @@ async function loadKanban(): Promise<CacheEntry> {
   if (Date.now() - cache.at < CACHE_TTL_MS) return cache
   if (inFlight) return inFlight
   inFlight = runKanbanList()
-    .then((tasks) => {
+    .then(async (tasks) => {
       if (lastLoggedError) console.log('[digital-company] Hermes Kanban reachable again')
       lastLoggedError = null
-      return { at: Date.now(), tasks, error: null }
+      const approvals = await loadApprovals(tasks)
+      return { at: Date.now(), tasks, approvals, error: null }
     })
     .catch((err: Error) => {
       const message = err?.message || String(err)
@@ -86,7 +141,7 @@ async function loadKanban(): Promise<CacheEntry> {
         console.error('[digital-company] Hermes Kanban unavailable:', message)
         lastLoggedError = message
       }
-      return { at: Date.now(), tasks: null, error: 'Hermes Kanban is unavailable' }
+      return { at: Date.now(), tasks: null, approvals: new Map<string, ApprovalCategory>(), error: 'Hermes Kanban is unavailable' }
     })
     .then((entry) => {
       cache = entry
@@ -118,7 +173,7 @@ router.get('/agents', async (_req, res) => {
   res.json({
     source: 'hermes-kanban',
     generatedAt: new Date(entry.at).toISOString(),
-    agents: buildAgentStates(entry.tasks),
+    agents: buildAgentStates(entry.tasks, entry.approvals),
   })
 })
 

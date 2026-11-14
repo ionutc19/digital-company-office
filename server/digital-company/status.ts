@@ -147,14 +147,62 @@ export function parseKanbanTasks(payload: unknown): ParseResult {
   return { tasks, rejected }
 }
 
-export function buildAgentStates(tasks: HermesTask[]) {
+export type ApprovalCategory = 'budget' | 'security' | 'incident' | 'other'
+
+/** Marker defined by the human-approval-gate skill in digital-company. */
+const APPROVAL_MARKER = /^\s*HUMAN_APPROVAL\s*(?:\[\s*([a-z-]+)\s*\])?/i
+
+/**
+ * Reads `hermes kanban show <id> --json` and returns the approval category
+ * when the task's latest block is a needs_input block whose reason starts
+ * with the HUMAN_APPROVAL marker; otherwise null.
+ */
+export function approvalFromShow(show: unknown): ApprovalCategory | null {
+  const events = (show as { events?: unknown })?.events
+  if (!Array.isArray(events)) return null
+  for (let i = events.length - 1; i >= 0; i--) {
+    const e = events[i] as { kind?: unknown; payload?: unknown }
+    if (e?.kind === 'unblocked') return null
+    if (e?.kind !== 'blocked') continue
+    let payload = e.payload as Record<string, unknown> | string | null | undefined
+    if (typeof payload === 'string') {
+      try {
+        payload = JSON.parse(payload) as Record<string, unknown>
+      } catch {
+        return null
+      }
+    }
+    const reason = typeof payload?.reason === 'string' ? payload.reason : ''
+    const kind = payload?.kind
+    const m = APPROVAL_MARKER.exec(reason)
+    if (!m || (kind !== undefined && kind !== null && kind !== 'needs_input')) return null
+    const cat = (m[1] || '').toLowerCase()
+    return cat === 'budget' || cat === 'security' || cat === 'incident' ? cat : 'other'
+  }
+  return null
+}
+
+const ORCHESTRATOR_PROFILE = 'john-tdm'
+
+/**
+ * @param approvals taskId -> category for blocked tasks awaiting Ionut.
+ * An agent whose active task awaits approval is HUMAN_APPROVAL. John, who
+ * relays every approval, joins the Approval Room when he is idle or waiting.
+ */
+export function buildAgentStates(tasks: HermesTask[], approvals: Map<string, ApprovalCategory> = new Map()) {
+  const anyPending = tasks.some((t) => t.status === 'blocked' && approvals.has(t.id))
   return AGENTS.map((agent) => {
     const task = activeTaskForProfile(tasks, agent.profile)
+    let status: AgentStatus = mapStatus(task?.status)
+    if (task && task.status === 'blocked' && approvals.has(task.id)) status = 'human-approval'
+    if (agent.profile === ORCHESTRATOR_PROFILE && anyPending && (status === 'idle' || status === 'waiting')) {
+      status = 'human-approval'
+    }
     return {
       id: agent.id,
       name: agent.name,
       profile: agent.profile,
-      status: mapStatus(task?.status),
+      status,
       task: task
         ? {
             id: task.id,
@@ -162,6 +210,7 @@ export function buildAgentStates(tasks: HermesTask[]) {
             status: task.status,
             projectId: task.project_id,
             lastFailure: task.last_failure_error,
+            approval: approvals.get(task.id) ?? null,
           }
         : null,
     }
