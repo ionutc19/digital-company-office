@@ -1,0 +1,194 @@
+/**
+ * Bulma's compliance view. Read-only sources:
+ *  - Project Memory files in the digital-company repo
+ *    (projects/<id>/PROJECT.md, "## Compliance Profile" section);
+ *  - Hermes Kanban tasks owned by Bulma or using compliance skills;
+ *  - pending HUMAN_APPROVAL [security] decisions.
+ * Applicability and evidence mapping only: never declares compliance.
+ */
+import * as fs from 'fs'
+import * as path from 'path'
+
+import { AGENTS, ApprovalCategory, HermesTask } from './status'
+
+export const FRAMEWORKS = ['GDPR', 'ISO27001', 'ISO22301', 'NIST_CSF', 'NIS2', 'DORA', 'EU_CRA'] as const
+export type Framework = (typeof FRAMEWORKS)[number]
+
+/** Vocabulary from agents/compliance-officer/SOUL.md and the project template. */
+export const VALID_STATUSES = new Set([
+  'APPLICABLE',
+  'TARGET_STANDARD',
+  'POTENTIALLY_APPLICABLE',
+  'NOT_APPLICABLE',
+  'UNKNOWN',
+  'SECURITY_GUIDANCE',
+  'NOT_REQUIRED',
+])
+
+export const DISCLAIMER =
+  'Applicability and evidence mapping only. This is not legal advice and does not declare any organisation, ' +
+  'architecture or implementation compliant or certified.'
+
+/** Compliance skills in digital-company/.hermes/skills/compliance -> framework. */
+const SKILL_FRAMEWORK: Record<string, Framework | 'ROUTER'> = {
+  'gdpr-security-review': 'GDPR',
+  'iso27001-security-review': 'ISO27001',
+  'iso22301-continuity-review': 'ISO22301',
+  'nist-csf-review': 'NIST_CSF',
+  'nis2-security-review': 'NIS2',
+  'dora-security-review': 'DORA',
+  'eu-cra-review': 'EU_CRA',
+  'security-framework-router': 'ROUTER',
+}
+
+export interface FrameworkStatus {
+  status: string
+  recognized: boolean
+}
+
+export interface ProjectCompliance {
+  projectId: string
+  name: string | null
+  file: string
+  frameworks: Record<Framework, FrameworkStatus>
+  otherFrameworks: string[]
+  evidence: string[]
+  openQuestions: string[]
+}
+
+const KEY_LINE = /^([A-Za-z0-9_ ]+):\s*(.*)$/
+
+/** Parses the "## Compliance Profile" section of a Project Memory file. */
+export function parseComplianceProfile(markdown: string): Omit<ProjectCompliance, 'file'> & { projectId: string | null } {
+  const lines = markdown.replace(/\r\n/g, '\n').split('\n')
+  const header = (key: string) => {
+    const l = lines.find((x) => x.toLowerCase().startsWith(`${key.toLowerCase()}:`))
+    const v = l ? l.slice(key.length + 1).trim() : ''
+    return v || null
+  }
+
+  const start = lines.findIndex((l) => /^##\s+Compliance Profile\s*$/i.test(l.trim()))
+  const section: string[] = []
+  if (start >= 0) {
+    for (let i = start + 1; i < lines.length; i++) {
+      if (/^##\s/.test(lines[i])) break
+      section.push(lines[i])
+    }
+  }
+
+  // Key: value either on the same line or on the following non-empty lines.
+  const values = new Map<string, string[]>()
+  let current: string | null = null
+  for (const raw of section) {
+    const line = raw.trim()
+    if (!line) continue
+    const m = KEY_LINE.exec(line)
+    if (m && !line.startsWith('-') && !line.startsWith('*')) {
+      current = m[1].trim().toUpperCase().replace(/\s+/g, '_')
+      values.set(current, m[2].trim() ? [m[2].trim()] : [])
+      continue
+    }
+    if (current) values.get(current)!.push(line.replace(/^[-*]\s*/, ''))
+  }
+
+  const frameworks = {} as Record<Framework, FrameworkStatus>
+  for (const f of FRAMEWORKS) {
+    const v = (values.get(f)?.[0] || 'UNKNOWN').trim()
+    // The template lists the options for NIST_CSF ("A / B / C"): that means not decided yet.
+    const status = v.includes('/') ? 'UNKNOWN' : v.toUpperCase()
+    frameworks[f] = { status, recognized: VALID_STATUSES.has(status) }
+  }
+  const list = (key: string) => (values.get(key) || []).filter((x) => x && x.toUpperCase() !== 'NONE')
+
+  return {
+    projectId: header('Project ID'),
+    name: header('Project Name'),
+    frameworks,
+    otherFrameworks: list('OTHER_FRAMEWORKS'),
+    evidence: list('COMPLIANCE_EVIDENCE'),
+    openQuestions: list('OPEN_COMPLIANCE_QUESTIONS'),
+  }
+}
+
+/** Frameworks a task touches, from its explicit compliance skills. */
+export function taskFrameworks(skills: string[] | undefined): { frameworks: Framework[]; router: boolean } {
+  const frameworks = new Set<Framework>()
+  let router = false
+  for (const s of skills || []) {
+    const f = SKILL_FRAMEWORK[s]
+    if (f === 'ROUTER') router = true
+    else if (f) frameworks.add(f)
+  }
+  return { frameworks: Array.from(frameworks), router }
+}
+
+const BULMA = 'compliance-officer'
+const agentByProfile = new Map(AGENTS.map((a) => [a.profile, a]))
+
+export function buildCompliance(
+  tasks: HermesTask[],
+  approvals: Map<string, ApprovalCategory>,
+  projects: ProjectCompliance[]
+) {
+  const complianceTasks = tasks
+    .filter((t) => t.status !== 'archived')
+    .map((t) => ({ t, ...taskFrameworks(t.skills) }))
+    .filter(({ t, frameworks, router }) => t.assignee === BULMA || frameworks.length > 0 || router)
+    .map(({ t, frameworks, router }) => ({
+      taskId: t.id,
+      title: t.title,
+      status: t.status,
+      agentId: (t.assignee && agentByProfile.get(t.assignee)?.id) || null,
+      agentName: (t.assignee && agentByProfile.get(t.assignee)?.name) || t.assignee,
+      projectId: t.project_id,
+      frameworks,
+      applicabilityCheck: router,
+      approval: approvals.get(t.id) ?? null,
+    }))
+    .sort((a, b) => Number(a.status === 'done') - Number(b.status === 'done'))
+
+  const securityApprovals = tasks
+    .filter((t) => t.status === 'blocked' && approvals.get(t.id) === 'security')
+    .map((t) => ({
+      taskId: t.id,
+      title: t.title,
+      agentId: (t.assignee && agentByProfile.get(t.assignee)?.id) || null,
+      agentName: (t.assignee && agentByProfile.get(t.assignee)?.name) || t.assignee,
+      projectId: t.project_id,
+    }))
+
+  return { disclaimer: DISCLAIMER, frameworks: FRAMEWORKS, projects, tasks: complianceTasks, securityApprovals }
+}
+
+// ---------------------------------------------------------------------------
+// I/O: read Project Memory files (read-only, bounded).
+
+const MAX_PROJECTS = 200
+const MAX_FILE_BYTES = 256 * 1024
+
+export function companyRoot(): string {
+  return process.env.DC_COMPANY_ROOT || path.resolve(__dirname, '..', '..', '..', 'digital-company')
+}
+
+export function loadProjects(root = companyRoot()): { projects: ProjectCompliance[]; error: string | null } {
+  const dir = path.join(root, 'projects')
+  let entries: fs.Dirent[]
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return { projects: [], error: `Project Memory not found at ${dir} (set DC_COMPANY_ROOT)` }
+  }
+  const projects: ProjectCompliance[] = []
+  for (const e of entries.filter((x) => x.isDirectory() && !x.name.startsWith('_') && !x.name.startsWith('.')).slice(0, MAX_PROJECTS)) {
+    const file = path.join(dir, e.name, 'PROJECT.md')
+    try {
+      if (fs.statSync(file).size > MAX_FILE_BYTES) continue
+      const parsed = parseComplianceProfile(fs.readFileSync(file, 'utf8'))
+      projects.push({ ...parsed, projectId: parsed.projectId || e.name, file: path.relative(root, file) })
+    } catch {
+      // Missing or unreadable PROJECT.md: skip the folder.
+    }
+  }
+  projects.sort((a, b) => a.projectId.localeCompare(b.projectId))
+  return { projects, error: null }
+}

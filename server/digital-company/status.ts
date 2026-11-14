@@ -23,6 +23,7 @@ export interface HermesTask {
   created_at: number | null
   started_at: number | null
   completed_at?: number | null
+  skills?: string[]
 }
 
 export interface AgentDefinition {
@@ -142,6 +143,7 @@ export function parseKanbanTasks(payload: unknown): ParseResult {
         created_at: (t.created_at as number | null) ?? null,
         started_at: (t.started_at as number | null) ?? null,
         completed_at: (t.completed_at as number | null) ?? null,
+        skills: Array.isArray(t.skills) ? (t.skills as unknown[]).filter((x): x is string => typeof x === 'string') : [],
       })
     } else {
       rejected++

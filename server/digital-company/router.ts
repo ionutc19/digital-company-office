@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import { Router } from 'express'
 
+import { buildCompliance, loadProjects } from './compliance'
 import { loadFinOps } from './finops'
 
 import {
@@ -199,6 +200,19 @@ router.get('/overview', async (_req, res) => {
     source: 'hermes-kanban',
     generatedAt: new Date(entry.at).toISOString(),
     ...buildOverview(entry.tasks, entry.approvals),
+  })
+})
+
+router.get('/compliance', async (_req, res) => {
+  const entry = await loadKanban()
+  res.set('Cache-Control', 'no-store')
+  const { projects, error } = loadProjects()
+  res.json({
+    source: 'project-memory+hermes-kanban',
+    generatedAt: new Date().toISOString(),
+    kanbanAvailable: !!entry.tasks,
+    projectMemoryError: error,
+    ...buildCompliance(entry.tasks || [], entry.approvals, projects),
   })
 })
 
