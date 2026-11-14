@@ -41,6 +41,9 @@ jobs:
         run: |
           yarn typecheck
           yarn build
+      - name: Hermes Dashboard plugin bundle
+        working-directory: client
+        run: yarn build:plugin
 
   plugin-backend:
     runs-on: ubuntu-latest

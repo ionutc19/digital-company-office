@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:plugin": "vite build --config vite.plugin.config.ts && node scripts/copy-plugin-assets.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.9.0",
