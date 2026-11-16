@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 
-import { createCharacterAnims } from '../anims/CharacterAnims'
+import { CHARACTER_TEXTURES, createCharacterAnims, FRAME_HEIGHT, FRAME_WIDTH } from '../anims/CharacterAnims'
 import AgentNpcManager from '../digital-company/AgentNpcManager'
 import { TiledMap } from '../digital-company/officeGrid'
 
@@ -43,10 +43,7 @@ export default class OfficeViewScene extends Phaser.Scene {
       ['office', 'tileset/Modern_Office_Black_Shadow.png', 32, 32],
       ['basement', 'tileset/Basement.png', 32, 32],
       ['generic', 'tileset/Generic.png', 32, 32],
-      ['adam', 'character/adam.png', 32, 48],
-      ['ash', 'character/ash.png', 32, 48],
-      ['lucy', 'character/lucy.png', 32, 48],
-      ['nancy', 'character/nancy.png', 32, 48],
+      ...CHARACTER_TEXTURES.map((key): [string, string, number, number] => [key, `character/${key}.png`, FRAME_WIDTH, FRAME_HEIGHT]),
     ]
     sheets.forEach(([key, url, frameWidth, frameHeight]) => this.load.spritesheet(key, url, { frameWidth, frameHeight }))
   }
