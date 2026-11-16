@@ -4,6 +4,7 @@ import AgentAvatar, { PixelPoint, STANDING_Y_OFFSET } from '../characters/AgentA
 import { Event, phaserEvents } from '../events/EventCenter'
 import { digitalCompanyAgents } from './agents'
 import { AgentStatusSnapshot, subscribeAgentStatus } from './agentStatusStore'
+import { layoutLabels } from './labelLayout'
 import officeLayout from './officeLayout.json'
 import {
   buildWalkGrid,
@@ -32,6 +33,7 @@ import {
 const AREAS: AreaKind[] = ['lounge', 'waiting', 'review', 'approval', 'blocked', 'offline']
 const IDLE_WANDER_INTERVAL_MS = 6000
 const IDLE_WANDER_PROBABILITY = 0.3
+const LABEL_LAYOUT_INTERVAL_MS = 250
 
 /**
  * Creates one local NPC per Digital Company agent and moves it to the zone
@@ -51,6 +53,7 @@ export default class AgentNpcManager {
   private initialized = false
   private unsubscribe?: () => void
   private wanderTimer?: Phaser.Time.TimerEvent
+  private labelTimer?: Phaser.Time.TimerEvent
 
   constructor(private readonly scene: Phaser.Scene, map: TiledMap) {
     this.grid = buildWalkGrid(map)
@@ -88,12 +91,18 @@ export default class AgentNpcManager {
       loop: true,
       callback: () => this.wander(),
     })
+    this.labelTimer = scene.time.addEvent({
+      delay: LABEL_LAYOUT_INTERVAL_MS,
+      loop: true,
+      callback: () => this.layoutLabels(),
+    })
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.destroy())
   }
 
   destroy(): void {
     this.unsubscribe?.()
     this.wanderTimer?.remove()
+    this.labelTimer?.remove()
     this.avatars.forEach((a) => a.destroy())
     this.avatars.clear()
   }
@@ -168,6 +177,16 @@ export default class AgentNpcManager {
     })
     waypoints.push(this.spotPoint(spot))
     avatar.walk(waypoints, spot.sit)
+  }
+
+  /** Stack labels that would overlap (several agents in one room). */
+  private layoutLabels(): void {
+    const boxes: Array<{ id: string; x: number; y: number; width: number }> = []
+    this.avatars.forEach((a, id) => {
+      if (a.sprite.visible) boxes.push({ id, x: a.sprite.x, y: a.sprite.y, width: a.labelWidth })
+    })
+    const levels = layoutLabels(boxes)
+    levels.forEach((level, id) => this.avatars.get(id)?.setLabelLevel(level))
   }
 
   /** Cheap idle behaviour: idle agents occasionally stroll inside the lounge. */

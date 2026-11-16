@@ -103,6 +103,15 @@ const isStr = (v: unknown): v is string => typeof v === 'string'
 const isStrOrNull = (v: unknown): v is string | null => v === null || v === undefined || typeof v === 'string'
 const isNumOrNull = (v: unknown): v is number | null => v === null || v === undefined || typeof v === 'number'
 
+/**
+ * Hermes project slugs are lowercase (`dc-0001`); Project Memory and the UI use
+ * the friendly form `DC-0001`. Other ids are returned unchanged.
+ */
+export function normalizeProjectId(id: string | null): string | null {
+  if (!id) return id
+  return /^dc-\d{4,}$/i.test(id) ? id.toUpperCase() : id
+}
+
 export interface ParseResult {
   tasks: HermesTask[]
   rejected: number
@@ -138,7 +147,7 @@ export function parseKanbanTasks(payload: unknown): ParseResult {
         title: t.title,
         status: t.status,
         assignee: (t.assignee as string | null) ?? null,
-        project_id: (t.project_id as string | null) ?? null,
+        project_id: normalizeProjectId((t.project_id as string | null) ?? null),
         last_failure_error: (t.last_failure_error as string | null) ?? null,
         created_at: (t.created_at as number | null) ?? null,
         started_at: (t.started_at as number | null) ?? null,

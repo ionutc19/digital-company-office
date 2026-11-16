@@ -106,3 +106,14 @@ test('timeAgo handles Hermes Unix seconds and milliseconds', () => {
   assert.equal(timeAgo(null, now), '')
   assert.equal(toDate(0), null)
 })
+
+test('every agent texture is a 52-frame 32x48 character sheet', () => {
+  for (const id of AGENT_IDS) {
+    const file = path.join(root, 'public/assets/character', `${layout.agents[id].texture}.png`)
+    assert.ok(fs.existsSync(file), `${id}: ${file} exists`)
+    const png = fs.readFileSync(file)
+    assert.equal(png.toString('ascii', 12, 16), 'IHDR', `${id}: PNG header`)
+    assert.equal(png.readUInt32BE(16), 52 * 32, `${id}: sheet width`)
+    assert.equal(png.readUInt32BE(20), 48, `${id}: sheet height`)
+  }
+})

@@ -38,6 +38,9 @@ const WALK_SPEED_PX_PER_S = 110
 /** Standing sprites are drawn with their centre above the tile so feet sit inside it. */
 export const STANDING_Y_OFFSET = -12
 
+/** Height of one stacked label row (LABEL_HEIGHT + LABEL_GAP in labelLayout.ts). */
+const LABEL_ROW = 18
+
 const OVERLAY_SELECTOR = 'button, a, input, textarea, select, aside, section, [role="dialog"], [data-dc-overlay]'
 
 function startedOnOverlay(target: unknown): boolean {
@@ -54,6 +57,7 @@ export default class AgentAvatar {
   private walkTween?: Phaser.Tweens.Tween
   private walkToken = 0
   private currentStatus = 'idle'
+  private labelLevel = 0
   moving = false
 
   constructor(
@@ -180,9 +184,21 @@ export default class AgentAvatar {
     this.syncLabel()
   }
 
+  /** Label width in pixels (for overlap layout). */
+  get labelWidth(): number {
+    return this.nameText.width + 14
+  }
+
+  /** Raise the label by `level` rows so it does not cover a neighbour's label. */
+  setLabelLevel(level: number): void {
+    if (level === this.labelLevel) return
+    this.labelLevel = level
+    this.syncLabel()
+  }
+
   private syncLabel(): void {
     const width = this.nameText.width + 14
-    this.label.setPosition(this.sprite.x - width / 2 + 6, this.sprite.y - 30)
+    this.label.setPosition(this.sprite.x - width / 2 + 6, this.sprite.y - 30 - this.labelLevel * LABEL_ROW)
     if (this.moving) this.sprite.setDepth(this.sprite.y)
   }
 }
