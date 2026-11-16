@@ -1,6 +1,12 @@
 import Phaser from 'phaser'
 
-import { sittingShiftData } from './Player'
+/** Same offsets as the original SkyOffice player sitting animation. */
+const sittingShiftData = {
+  up: [0, 3, -10],
+  down: [0, 3, 1],
+  left: [0, -8, 10],
+  right: [0, -8, 10],
+} as const
 
 /**
  * Local, non-networked NPC representing one Digital Company agent.

@@ -1,11 +1,10 @@
 {
   "name": "skyoffice",
   "version": "1.0.0",
-  "description": "Server for SkyOffice",
-  "main": ".eslintrc.js",
+  "description": "Digital Company Office: development API (read-only Hermes adapter)",
+  "main": "server/index.ts",
   "scripts": {
     "start": "cd server && ts-node-dev --project tsconfig.server.json --respawn --transpile-only index.ts",
-    "heroku-postbuild": "yarn && cd types && yarn && cd ../server && tsc --project tsconfig.server.json",
     "test": "node -r ts-node/register/transpile-only --test --test-timeout=30000 server/digital-company/status.test.ts server/digital-company/finops.test.ts server/digital-company/compliance.test.ts server/digital-company/activity.test.ts client/src/digital-company/officeLayout.test.ts client/src/plugin/dataSource.test.ts",
     "typecheck": "tsc --project server/tsconfig.server.json --noEmit"
   },
@@ -31,19 +30,12 @@
     "ts-node-dev": "^1.0.0-pre.63"
   },
   "dependencies": {
-    "@colyseus/command": "^0.1.7",
-    "@colyseus/monitor": "^0.14.0",
-    "@types/bcrypt": "^5.0.0",
     "@types/cors": "^2.8.12",
     "@types/express": "^4.17.13",
-    "bcrypt": "^5.0.1",
-    "colyseus": "^0.14.0",
-    "colyseus.js": "^0.14.12",
     "cors": "^2.8.5",
     "express": "^4.16.4",
-    "phaser": "^3.55.2",
-    "regenerator-runtime": "^0.13.7",
-    "typescript": "^4.8.2"
+    "typescript": "^4.8.2",
+    "ws": "7.5.8"
   },
   "engines": {
     "node": ">=22 <27"
