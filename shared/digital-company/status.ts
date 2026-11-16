@@ -104,12 +104,16 @@ const isStrOrNull = (v: unknown): v is string | null => v === null || v === unde
 const isNumOrNull = (v: unknown): v is number | null => v === null || v === undefined || typeof v === 'number'
 
 /**
- * Hermes project slugs are lowercase (`dc-0001`); Project Memory and the UI use
- * the friendly form `DC-0001`. Other ids are returned unchanged.
+ * Project Memory and the UI use the friendly id `DC-0001`. Hermes stores either
+ * the slug (`dc-0001`) or its internal id (`p_2eee3264`) on a task; for the
+ * latter the friendly id comes from the card title convention `[DC-0001] ...`.
+ * Anything else is returned unchanged.
  */
-export function normalizeProjectId(id: string | null): string | null {
-  if (!id) return id
-  return /^dc-\d{4,}$/i.test(id) ? id.toUpperCase() : id
+export function normalizeProjectId(id: string | null, title?: string | null): string | null {
+  if (id && /^dc-\d{4,}$/i.test(id)) return id.toUpperCase()
+  const fromTitle = title ? /^\s*\[(dc-\d{4,})\]/i.exec(title) : null
+  if (fromTitle) return fromTitle[1].toUpperCase()
+  return id
 }
 
 export interface ParseResult {
@@ -147,7 +151,7 @@ export function parseKanbanTasks(payload: unknown): ParseResult {
         title: t.title,
         status: t.status,
         assignee: (t.assignee as string | null) ?? null,
-        project_id: normalizeProjectId((t.project_id as string | null) ?? null),
+        project_id: normalizeProjectId((t.project_id as string | null) ?? null, t.title),
         last_failure_error: (t.last_failure_error as string | null) ?? null,
         created_at: (t.created_at as number | null) ?? null,
         started_at: (t.started_at as number | null) ?? null,
