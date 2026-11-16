@@ -1,7 +1,16 @@
 import { test } from 'node:test'
 import { strict as assert } from 'assert'
 
-import { activeTaskForProfile, approvalFromShow, buildOverview, recentTasksForProfile, buildAgentStates, mapStatus, parseKanbanTasks, AGENTS, HermesTask } from './status'
+import { activeTaskForProfile, approvalFromShow, buildOverview, recentTasksForProfile, buildAgentStates, mapStatus, normalizeProjectId, parseKanbanTasks, AGENTS, HermesTask } from './status'
+
+test('Hermes project slugs map to friendly DC ids', () => {
+  assert.equal(normalizeProjectId('dc-0001'), 'DC-0001')
+  assert.equal(normalizeProjectId('DC-0012'), 'DC-0012')
+  assert.equal(normalizeProjectId('proj_abc'), 'proj_abc')
+  assert.equal(normalizeProjectId(null), null)
+  const { tasks } = parseKanbanTasks([{ id: 'x', title: 'T', status: 'todo', assignee: null, project_id: 'dc-0007', last_failure_error: null, created_at: 1, started_at: null }])
+  assert.equal(tasks[0].project_id, 'DC-0007')
+})
 
 const task = (over: Partial<HermesTask>): HermesTask => ({
   id: 't1',
