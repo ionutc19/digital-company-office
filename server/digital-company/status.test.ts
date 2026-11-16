@@ -8,8 +8,15 @@ test('Hermes project slugs map to friendly DC ids', () => {
   assert.equal(normalizeProjectId('DC-0012'), 'DC-0012')
   assert.equal(normalizeProjectId('proj_abc'), 'proj_abc')
   assert.equal(normalizeProjectId(null), null)
+  // Hermes stores its internal project id on cards: use the [DC-####] title prefix
+  assert.equal(normalizeProjectId('p_2eee3264', '[DC-0001] Requirements and acceptance criteria'), 'DC-0001')
+  assert.equal(normalizeProjectId(null, '[dc-0003] lower-case prefix'), 'DC-0003')
+  assert.equal(normalizeProjectId('p_2eee3264', 'No prefix here'), 'p_2eee3264')
+  assert.equal(normalizeProjectId('p_x', 'Mentions [DC-0009] later'), 'p_x')
   const { tasks } = parseKanbanTasks([{ id: 'x', title: 'T', status: 'todo', assignee: null, project_id: 'dc-0007', last_failure_error: null, created_at: 1, started_at: null }])
   assert.equal(tasks[0].project_id, 'DC-0007')
+  const { tasks: live } = parseKanbanTasks([{ id: 'y', title: '[DC-0001] Plan', status: 'ready', assignee: null, project_id: 'p_2eee3264', last_failure_error: null, created_at: 1, started_at: null }])
+  assert.equal(live[0].project_id, 'DC-0001')
 })
 
 const task = (over: Partial<HermesTask>): HermesTask => ({
