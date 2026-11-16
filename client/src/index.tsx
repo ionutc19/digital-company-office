@@ -1,23 +1,18 @@
-import 'regenerator-runtime/runtime'
+/**
+ * Standalone development app: the same Office view as the Hermes Dashboard
+ * tab, fed by the local Express adapter (/api/digital-company, see
+ * server/digital-company). Production runs inside the Dashboard plugin.
+ */
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { Provider } from 'react-redux'
-import { ThemeProvider } from '@mui/material/styles'
 
-import './index.scss'
-import './PhaserGame'
-import muiTheme from './MuiTheme'
-import App from './App'
-import store from './stores'
+import OfficeView from './office/OfficeView'
 
-const container = document.getElementById('root')
-const root = createRoot(container!)
-root.render(
+const container = document.getElementById('root') as HTMLElement
+document.body.style.margin = '0'
+document.body.style.background = '#020617'
+createRoot(container).render(
   <React.StrictMode>
-    <Provider store={store}>
-      <ThemeProvider theme={muiTheme}>
-        <App />
-      </ThemeProvider>
-    </Provider>
+    <OfficeView assetBase="/assets/" height="100vh" />
   </React.StrictMode>
 )

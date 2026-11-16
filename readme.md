@@ -1,39 +1,54 @@
 # Digital Company Virtual Office
 
-Fork of SkyOffice customised as the operational cockpit of the Digital Company
-Hermes fleet. Branches: `master` = vanilla SkyOffice (tag
-`skyoffice-vanilla-baseline`), `digital-company` = working branch.
+Operational cockpit of the Digital Company Hermes fleet: a read-only office
+map where the 11 agents walk to the room matching their live Hermes Kanban
+status, plus John's Control Center, Piccolo's FinOps, Bulma's compliance view
+and an activity/ITSM timeline. No LLM calls.
+
+Originally a fork of SkyOffice. `master` and the tag
+`skyoffice-vanilla-baseline` keep the vanilla code. The multiplayer, WebRTC,
+chat, whiteboard and login parts were removed on the `digital-company` branch.
+
+## Production: Hermes Dashboard plugin
+
+The Office is the **Office** tab of the Hermes Dashboard
+(`http://127.0.0.1:9119/digital-company`):
+
+| Path | Contents |
+|---|---|
+| `hermes-plugin/digital-company/` | `plugin.yaml`, a no-op `__init__.py` and `dashboard/` |
+| `dashboard/plugin_api.py` | Thin read-only data API at `/api/plugins/digital-company/`, behind the Dashboard's auth |
+| `client/src/plugin` | Frontend bundle (`yarn build:plugin`): React from the Dashboard SDK, Phaser bundled |
+| `shared/digital-company` | Pure, tested logic used in the browser and by the dev server |
+
+Install or update it from the `digital-company` repo with
+`bootstrap\install-office-plugin.ps1`, or with `-FromCi` to use the CI-built
+bundle.
+
+## Development
 
 **Runtime:** Node.js 26 LTS on the workstation (`.nvmrc`; `engines` accepts
-22-26, both tested in CI). The Hermes installer reuses a system Node 22.22+,
-24.11+ or 26+. Yarn 1.22.22 (`packageManager`); Node 25+ has no Corepack, so
-install it with `npm install -g yarn@1.22.22`.
-Registry and network timeout are set per project in `.yarnrc`.
+22–26, both tested in CI) and Yarn 1.22.22 (`npm install -g yarn@1.22.22`).
 
 ```powershell
-npm install -g yarn@1.22.22   # once per machine
 yarn install --frozen-lockfile
-cd types;  yarn install --frozen-lockfile; cd ..
 cd client; yarn install --frozen-lockfile; cd ..
-yarn test                # adapter status-mapping tests
-yarn start               # backend + read-only Hermes adapter on 127.0.0.1:2567
-cd client; yarn dev      # UI on http://127.0.0.1:5173 (proxies /api to :2567)
+yarn test                # server, shared and plugin data-source tests
+yarn start               # dev API (read-only Hermes adapter) on 127.0.0.1:2567
+cd client; yarn dev      # same Office view on http://127.0.0.1:5173
 ```
 
-Live status: Hermes Kanban -> `hermes kanban list --json` -> adapter
-(`server/digital-company/`) -> `/api/digital-company/agents` -> roster UI.
-No LLM calls. The adapter binds to loopback, caches for 3 s, validates the CLI
-JSON and returns 503 (UI shows OFFLINE) when Hermes is unavailable.
+Plugin backend tests: `pip install -r hermes-plugin/requirements-dev.txt` and
+then `pytest hermes-plugin/tests`. Set `HERMES_SRC` to a Hermes checkout to
+also run the contract test.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `HERMES_EXE` | `%LOCALAPPDATA%\hermes\hermes-agent\venv\Scripts\hermes.exe`, then `bin\hermes.exe`, then PATH | Hermes CLI used by the adapter (must be an `.exe`, not `.cmd`) |
-| `HOST` / `PORT` | `127.0.0.1` / `2567` | Backend bind address |
+| `HERMES_EXE` | `%LOCALAPPDATA%\hermes\hermes-agent\venv\Scripts\hermes.exe`, then `bin\hermes.exe`, then PATH | Hermes CLI used by the dev adapter (`.exe` only) |
+| `HOST` / `PORT` | `127.0.0.1` / `2567` | Dev API bind address |
 | `DC_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | CORS allowlist |
-| `ENABLE_COLYSEUS_MONITOR` | unset | `1` enables the unauthenticated `/colyseus` monitor (debug only) |
-
-Operations (start/stop/status/autostart) live in the `digital-company` repo
-under `ops/`; see its `docs/FRESH-LAPTOP-RECOVERY.md`.
+| `DC_DASHBOARD_TOKEN_FILE` | set by `ops\start-company.ps1` | Dashboard session token file (FinOps and activity in dev mode) |
+| `DC_COMPANY_ROOT` | sibling `digital-company` repo | Project Memory for the compliance and ITSM views |
 
 ---
 

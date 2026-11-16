@@ -30,7 +30,6 @@ jobs:
         run: |
           node -v; yarn -v
           yarn install --frozen-lockfile
-          (cd types && yarn install --frozen-lockfile)
           (cd client && yarn install --frozen-lockfile)
       - name: Server typecheck + adapter tests
         run: |
@@ -44,6 +43,21 @@ jobs:
       - name: Hermes Dashboard plugin bundle
         working-directory: client
         run: yarn build:plugin
+      # One installable plugin per run (Linux, Node 26), used by
+      # digital-company/bootstrap/install-office-plugin.ps1 -FromCi.
+      - name: Upload plugin artifact
+        if: matrix.os == 'ubuntu-latest' && matrix.node == '26'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: digital-company-plugin
+          path: |
+            hermes-plugin/digital-company/plugin.yaml
+            hermes-plugin/digital-company/__init__.py
+            hermes-plugin/digital-company/dashboard/manifest.json
+            hermes-plugin/digital-company/dashboard/plugin_api.py
+            hermes-plugin/digital-company/dashboard/dist/
+          if-no-files-found: error
+          retention-days: 30
 
   plugin-backend:
     runs-on: ubuntu-latest

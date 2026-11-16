@@ -1,4 +1,4 @@
-// Minimal typing for the `ws` client (v7, installed via @colyseus/ws-transport).
+// Minimal typing for the `ws` client (v7.5.8, a direct dependency; no @types/ws needed).
 declare module 'ws' {
   import { EventEmitter } from 'events'
   class WebSocket extends EventEmitter {
