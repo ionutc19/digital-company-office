@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { apiGet } from '../digital-company/api'
 import styled from 'styled-components'
 
 import { selectAgent, timeAgo } from '../digital-company/agentSelection'
@@ -247,9 +248,7 @@ export default function ControlCenterPanel() {
     let active = true
     const load = async () => {
       try {
-        const res = await fetch('/api/digital-company/overview', { cache: 'no-store' })
-        if (!res.ok) throw new Error(res.status === 503 ? 'Hermes Kanban is unavailable' : `HTTP ${res.status}`)
-        const body = (await res.json()) as Overview
+        const body = await apiGet<Overview>('/overview')
         if (active) {
           setData(body)
           setError(null)

@@ -1,0 +1,5 @@
+# Build output (produced by `yarn build:plugin` in client/)
+dashboard/dist/
+# Written by the installer on each machine
+dashboard/config.json
+__pycache__/

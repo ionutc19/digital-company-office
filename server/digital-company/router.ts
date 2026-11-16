@@ -4,7 +4,7 @@ import path from 'path'
 import { Router } from 'express'
 
 import { ActivityFeed, describeEvent } from './activity'
-import { buildCompliance, ITSM_TYPES, loadProjects } from './compliance'
+import { buildCompliance, buildItsmRooms, loadProjects } from './compliance'
 import { loadFinOps } from './finops'
 
 import {
@@ -254,24 +254,7 @@ router.get('/activity', async (req, res) => {
 router.get('/itsm', async (_req, res) => {
   const entry = await loadKanban()
   const { projects, error } = loadProjects()
-  const open = (entry.tasks || []).filter((t) => !['done', 'archived'].includes(t.status))
-  const rooms = [...ITSM_TYPES, 'UNCLASSIFIED'].map((type) => ({
-    type,
-    projects: projects
-      .filter((p) => p.itsm.type === type)
-      .map((p) => {
-        const tasks = open.filter((t) => t.project_id === p.projectId)
-        return {
-          projectId: p.projectId,
-          name: p.name,
-          changeType: p.itsm.changeType,
-          riskLevel: p.itsm.riskLevel,
-          openTasks: tasks.length,
-          blocked: tasks.filter((t) => t.status === 'blocked').length,
-          awaitingIonut: tasks.filter((t) => t.status === 'blocked' && entry.approvals.has(t.id)).length,
-        }
-      }),
-  }))
+  const rooms = buildItsmRooms(projects, entry.tasks || [], entry.approvals)
   res.set('Cache-Control', 'no-store')
   res.json({ generatedAt: new Date().toISOString(), kanbanAvailable: !!entry.tasks, projectMemoryError: error, rooms })
 })

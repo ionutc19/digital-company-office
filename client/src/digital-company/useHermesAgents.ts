@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { apiGet } from './api'
 
 import { AgentStatus } from './agentStatus'
 import { publishAgentStatus } from './agentStatusStore'
@@ -39,13 +40,7 @@ export function useHermesAgents() {
 
     async function refresh() {
       try {
-        const response = await fetch('/api/digital-company/agents', { cache: 'no-store' })
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`)
-        }
-
-        const data = (await response.json()) as HermesAgentsResponse
+        const data = await apiGet<HermesAgentsResponse>('/agents')
 
         if (!active) return
 
